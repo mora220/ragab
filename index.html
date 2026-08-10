@@ -94,6 +94,49 @@
     </div>
 
     <!-- سنقوم بوضع كود الجافاسكريبت و Firebase هنا لاحقاً -->
+<script type="module">
+  // استدعاء مكتبات فايربيز عبر روابط CDN لتعمل مباشرة في المتصفح
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+  // إعدادات مشروعك التي أرسلتها
+  const firebaseConfig = {
+    apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
+    authDomain: "ragabweb-c243a.firebaseapp.com",
+    projectId: "ragabweb-c243a",
+    storageBucket: "ragabweb-c243a.firebasestorage.app",
+    messagingSenderId: "995006462711",
+    appId: "1:995006462711:web:175c189f34cc15088d31f2"
+  };
+
+  // تهيئة فايربيز ونظام تسجيل الدخول
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const loginBtn = document.getElementById('loginBtn');
+  const errorMessage = document.getElementById('errorMessage');
+
+  loginBtn.addEventListener('click', () => {
+      const code = document.getElementById('userCode').value;
+      const password = document.getElementById('userPass').value;
+
+      // تحويل الكود إلى بريد إلكتروني وهمي
+      const email = code + "@ragabweb.com"; 
+
+      // إرسال الطلب لفايربيز
+      signInWithEmailAndPassword(auth, email, password)
+        .then((userCredential) => {
+          // نجاح تسجيل الدخول
+          alert("تم تسجيل الدخول بنجاح! أهلاً بك يا أستاذ محمد.");
+          errorMessage.style.display = 'none';
+          
+          // الكود الخاص بإخفاء واجهة الدخول وإظهار لوحة التحكم سيكتب هنا
+        })
+        .catch((error) => {
+          // فشل تسجيل الدخول
+          errorMessage.style.display = 'block';
+        });
+  });
+</script>
 </body>
 </html>
