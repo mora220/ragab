@@ -16,21 +16,25 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
+            padding: 20px;
         }
-        .login-card {
+        .card {
             background-color: white;
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 400px;
-            text-align: center;
         }
-        .login-card h2 {
+        .admin-card {
+            max-width: 800px;
+            margin: auto;
+        }
+        h2, h3 {
             color: #1a73e8;
             margin-bottom: 24px;
-            font-size: 24px;
+            text-align: center;
         }
         .input-group {
             margin-bottom: 20px;
@@ -74,16 +78,18 @@
             margin-top: 15px;
             font-size: 14px;
             display: none;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="login-card">
+    <!-- واجهة تسجيل الدخول -->
+    <div class="card login-card" id="loginSection">
         <h2>منصة الأستاذ محمد رجب 🎓</h2>
         <div class="input-group">
             <label for="userCode">كود المستخدم</label>
-            <input type="text" id="userCode" placeholder="أدخل الكود الخاص بك " required>
+            <input type="text" id="userCode" placeholder="أدخل الكود الخاص بك (مثال: 1411)" required>
         </div>
         <div class="input-group">
             <label for="userPass">كلمة المرور</label>
@@ -93,50 +99,69 @@
         <div id="errorMessage">كود المستخدم أو كلمة المرور غير صحيحة.</div>
     </div>
 
-    <!-- سنقوم بوضع كود الجافاسكريبت و Firebase هنا لاحقاً -->
-<script type="module">
-  // استدعاء مكتبات فايربيز عبر روابط CDN لتعمل مباشرة في المتصفح
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <!-- لوحة تحكم المدير (مخفية في البداية) -->
+    <div class="card admin-card" id="adminDashboard" style="display: none;">
+        <h2>مرحباً بك يا أستاذ محمد 👨‍🏫 - لوحة الإدارة</h2>
+        
+        <div style="border-top: 2px solid #f0f2f5; padding-top: 20px; margin-top: 20px;">
+            <h3>إضافة طالب جديد 📝</h3>
+            
+            <div class="input-group">
+                <label>اسم الطالب</label>
+                <input type="text" id="studentName" placeholder="مثال: أحمد محمود">
+            </div>
+            <div class="input-group">
+                <label>كود الطالب (الذي سيدخل به ولي الأمر)</label>
+                <input type="text" id="studentCode" placeholder="مثال: 2001">
+            </div>
+            <div class="input-group">
+                <label>كلمة المرور لحساب الطالب</label>
+                <input type="password" id="studentPass" placeholder="أدخل كلمة المرور">
+            </div>
+            
+            <button id="addStudentBtn">حفظ بيانات الطالب</button>
+            <div id="addStudentMsg" style="color: green; margin-top: 15px; display: none; text-align: center; font-weight: bold;">تمت إضافة الطالب بنجاح!</div>
+        </div>
+    </div>
 
-  // إعدادات مشروعك التي أرسلتها
-  const firebaseConfig = {
-    apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
-    authDomain: "ragabweb-c243a.firebaseapp.com",
-    projectId: "ragabweb-c243a",
-    storageBucket: "ragabweb-c243a.firebasestorage.app",
-    messagingSenderId: "995006462711",
-    appId: "1:995006462711:web:175c189f34cc15088d31f2"
-  };
+    <!-- كود الجافاسكريبت لفايربيز -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-  // تهيئة فايربيز ونظام تسجيل الدخول
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
+            authDomain: "ragabweb-c243a.firebaseapp.com",
+            projectId: "ragabweb-c243a",
+            storageBucket: "ragabweb-c243a.firebasestorage.app",
+            messagingSenderId: "995006462711",
+            appId: "1:995006462711:web:175c189f34cc15088d31f2"
+        };
 
-  const loginBtn = document.getElementById('loginBtn');
-  const errorMessage = document.getElementById('errorMessage');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
 
-  loginBtn.addEventListener('click', () => {
-      const code = document.getElementById('userCode').value;
-      const password = document.getElementById('userPass').value;
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const loginSection = document.getElementById('loginSection');
+        const adminDashboard = document.getElementById('adminDashboard');
 
-      // تحويل الكود إلى بريد إلكتروني وهمي
-      const email = code + "@ragabweb.com"; 
+        loginBtn.addEventListener('click', () => {
+            const code = document.getElementById('userCode').value;
+            const password = document.getElementById('userPass').value;
+            const email = code + "@ragabweb.com"; 
 
-      // إرسال الطلب لفايربيز
-      signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-          // نجاح تسجيل الدخول
-          alert("تم تسجيل الدخول بنجاح! أهلاً بك يا أستاذ محمد.");
-          errorMessage.style.display = 'none';
-          
-          // الكود الخاص بإخفاء واجهة الدخول وإظهار لوحة التحكم سيكتب هنا
-        })
-        .catch((error) => {
-          // فشل تسجيل الدخول
-          errorMessage.style.display = 'block';
+            signInWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    // إخفاء تسجيل الدخول وإظهار لوحة التحكم
+                    loginSection.style.display = 'none';
+                    adminDashboard.style.display = 'block';
+                    errorMessage.style.display = 'none';
+                })
+                .catch((error) => {
+                    errorMessage.style.display = 'block';
+                });
         });
-  });
-</script>
+    </script>
 </body>
 </html>
