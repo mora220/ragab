@@ -6,9 +6,9 @@
     <title>منصة الأستاذ محمد رجب</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .card { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .admin-card { max-width: 800px; margin: auto; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px; }
+        .card { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-top: 50px; }
+        .admin-card { max-width: 800px; margin: 20px auto; margin-top: 20px; }
         h2 { color: #1a73e8; margin-bottom: 24px; text-align: center; }
         h3 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 5px; display: inline-block; }
         .dashboard-section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 20px; background-color: #fafafa; }
@@ -16,10 +16,11 @@
         .input-group label { display: block; margin-bottom: 8px; color: #5f6368; font-weight: bold; }
         .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 15px; }
         .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #1a73e8; outline: none; }
-        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         button:hover { background-color: #1557b0; }
         .msg { margin-top: 10px; text-align: center; font-weight: bold; display: none; }
         .error { color: #d93025; } .success { color: #188038; }
+        .calc-result { background: #e8f0fe; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #cce0ff; display: none; line-height: 1.8; }
     </style>
 </head>
 <body>
@@ -27,8 +28,8 @@
     <!-- واجهة الدخول -->
     <div class="card login-card" id="loginSection">
         <h2>منصة الأستاذ محمد رجب 🎓</h2>
-        <div class="input-group"><label>كود المستخدم</label><input type="text" id="userCode" required></div>
-        <div class="input-group"><label>كلمة المرور</label><input type="password" id="userPass" required></div>
+        <div class="input-group"><label>كود المستخدم</label><input type="text" id="userCode" required placeholder="أدخل الكود الخاص بك"></div>
+        <div class="input-group"><label>كلمة المرور</label><input type="password" id="userPass" required placeholder="أدخل كلمة المرور"></div>
         <button id="loginBtn">تسجيل الدخول</button>
         <div id="errorMessage" class="msg error">البيانات غير صحيحة.</div>
     </div>
@@ -41,9 +42,10 @@
             <h3>إضافة طالب 📝</h3>
             <div class="input-group"><label>اسم الطالب</label><input type="text" id="studentName"></div>
             <div class="input-group"><label>كود الطالب</label><input type="text" id="studentCode"></div>
+            <div class="input-group"><label>سعر الحصة للطالب</label><input type="number" id="studentPrice" placeholder="مثال: 100"></div>
             <div class="input-group"><label>كلمة المرور</label><input type="password" id="studentPass"></div>
-            <button id="addStudentBtn">حفظ</button>
-            <div id="addStudentMsg" class="msg success">تم الحفظ!</div>
+            <button id="addStudentBtn">حفظ بيانات الطالب</button>
+            <div id="addStudentMsg" class="msg success">تم الحفظ بنجاح!</div>
         </div>
 
         <div class="dashboard-section">
@@ -56,7 +58,15 @@
             </div>
             <div class="input-group"><label>تقرير الحصة والملاحظات</label><textarea id="attReport" rows="3" placeholder="اكتب تقييمك للطالب..."></textarea></div>
             <button id="addAttendanceBtn">حفظ السجل</button>
-            <div id="addAttendanceMsg" class="msg success">تم التسجيل!</div>
+            <div id="addAttendanceMsg" class="msg success">تم التسجيل بنجاح!</div>
+        </div>
+
+        <div class="dashboard-section">
+            <h3>الحساب الشهري 💰</h3>
+            <div class="input-group"><label>كود الطالب</label><input type="text" id="calcStudentCode"></div>
+            <div class="input-group"><label>اختر الشهر</label><input type="month" id="calcMonth"></div>
+            <button id="calcBtn">احسب الإجمالي</button>
+            <div id="calcResult" class="calc-result"></div>
         </div>
     </div>
 
@@ -65,14 +75,15 @@
         <h2>مرحباً بك في منصة الطالب 🎓</h2>
         <div class="dashboard-section">
             <h3>سجل الحصص 📊</h3>
-            <button id="loadRecordsBtn">تحديث عرض السجلات (قريباً)</button>
+            <p style="color: #5f6368; margin-bottom: 15px;">سيتم عرض المواعيد وتقارير الحضور هنا.</p>
+            <button id="loadRecordsBtn">تحديث عرض السجلات</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const app = initializeApp({
             apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
@@ -84,6 +95,7 @@
 
         function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
 
+        // تسجيل الدخول
         document.getElementById('loginBtn').addEventListener('click', () => {
             const code = document.getElementById('userCode').value;
             const pass = document.getElementById('userPass').value;
@@ -94,19 +106,97 @@
             }).catch(() => document.getElementById('errorMessage').style.display = 'block');
         });
 
+        // إضافة طالب جديد
         document.getElementById('addStudentBtn').addEventListener('click', async () => {
-            const name = document.getElementById('studentName').value, code = document.getElementById('studentCode').value, pass = document.getElementById('studentPass').value;
-            if(!name || !code || !pass) return alert("أكمل الحقول!");
-            await setDoc(doc(db, "students", code), { name, code, password: pass });
+            const name = document.getElementById('studentName').value;
+            const code = document.getElementById('studentCode').value;
+            const price = document.getElementById('studentPrice').value;
+            const pass = document.getElementById('studentPass').value;
+            
+            if(!name || !code || !pass || !price) return alert("الرجاء إكمال جميع الحقول!");
+            
+            await setDoc(doc(db, "students", code), { 
+                name: name, 
+                code: code, 
+                price: Number(price), 
+                password: pass 
+            });
+            
             showMsg('addStudentMsg');
+            document.getElementById('studentName').value = '';
+            document.getElementById('studentCode').value = '';
+            document.getElementById('studentPrice').value = '';
+            document.getElementById('studentPass').value = '';
         });
 
+        // تسجيل الحضور
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
-            const code = document.getElementById('attStudentCode').value, date = document.getElementById('attDate').value;
-            const status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value;
-            if(!code || !date) return alert("أكمل الحقول الأساسية!");
-            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report });
+            const code = document.getElementById('attStudentCode').value;
+            const date = document.getElementById('attDate').value;
+            const status = document.getElementById('attStatus').value;
+            const report = document.getElementById('attReport').value;
+            
+            if(!code || !date) return alert("الرجاء إكمال الحقول الأساسية!");
+            
+            await addDoc(collection(db, "attendance"), { 
+                studentCode: code, 
+                date: date, 
+                status: status, 
+                report: report 
+            });
+            
             showMsg('addAttendanceMsg');
+            document.getElementById('attStudentCode').value = '';
+            document.getElementById('attDate').value = '';
+            document.getElementById('attReport').value = '';
+        });
+
+        // الحساب الشهري
+        document.getElementById('calcBtn').addEventListener('click', async () => {
+            const code = document.getElementById('calcStudentCode').value;
+            const monthVal = document.getElementById('calcMonth').value; // الصيغة YYYY-MM
+            
+            if(!code || !monthVal) return alert("الرجاء إدخال الكود واختيار الشهر!");
+
+            try {
+                // جلب بيانات الطالب لمعرفة السعر
+                const studentSnap = await getDoc(doc(db, "students", code));
+                if (!studentSnap.exists()) return alert("كود الطالب غير صحيح أو غير مسجل.");
+                
+                const studentData = studentSnap.data();
+                const price = studentData.price || 0;
+                const studentName = studentData.name || "طالب";
+
+                // جلب سجلات الحضور لهذا الطالب
+                const attRef = collection(db, "attendance");
+                const q = query(attRef, where("studentCode", "==", code), where("status", "==", "حاضر"));
+                const querySnapshot = await getDocs(q);
+
+                let presentCount = 0;
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // التأكد من أن تاريخ الحصة يبدأ بنفس الشهر والسنة المحددين
+                    if (data.date.startsWith(monthVal)) {
+                        presentCount++;
+                    }
+                });
+
+                const total = presentCount * price;
+                const resultDiv = document.getElementById('calcResult');
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `
+                    <strong>بيانات الحساب لشهر:</strong> ${monthVal}<br>
+                    <strong>اسم الطالب:</strong> ${studentName}<br>
+                    <strong>عدد حصص الحضور:</strong> ${presentCount} حصص<br>
+                    <strong>سعر الحصة:</strong> ${price}<br>
+                    <hr style="margin: 10px 0; border-top: 1px solid #cce0ff;">
+                    <strong>الإجمالي المطلوب:</strong> <span style="color: #1a73e8; font-size: 20px; font-weight: bold;">${total}</span>
+                `;
+
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء الحساب. تأكد من الاتصال بالإنترنت.");
+            }
         });
     </script>
 </body>
