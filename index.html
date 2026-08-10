@@ -5,293 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة الأستاذ محمد رجب</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        body {
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-        }
-        .admin-card {
-            max-width: 800px;
-            margin: auto;
-        }
-        h2 {
-            color: #1a73e8;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-        h3 {
-            color: #333;
-            margin-bottom: 15px;
-            border-bottom: 2px solid #1a73e8;
-            padding-bottom: 5px;
-            display: inline-block;
-        }
-        .dashboard-section {
-            border: 1px solid #e0e0e0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            background-color: #fafafa;
-        }
-        .input-group {
-            margin-bottom: 15px;
-            text-align: right;
-        }
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #5f6368;
-            font-weight: bold;
-        }
-        .input-group input, .input-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #dadce0;
-            border-radius: 6px;
-            font-size: 15px;
-            transition: border 0.3s;
-        }
-        .input-group input:focus, .input-group select:focus {
-            border-color: #1a73e8;
-            outline: none;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-top: 10px;
-        }
-        button:hover {
-            background-color: #1557b0;
-        }
-        .error-msg {
-            color: #d93025;
-            margin-top: 15px;
-            font-size: 14px;
-            display: none;
-            text-align: center;
-        }
-        .success-msg {
-            color: #188038;
-            margin-top: 10px;
-            display: none;
-            text-align: center;
-            font-weight: bold;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .card { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .admin-card { max-width: 800px; margin: auto; }
+        h2 { color: #1a73e8; margin-bottom: 24px; text-align: center; }
+        h3 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 5px; display: inline-block; }
+        .dashboard-section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 20px; background-color: #fafafa; }
+        .input-group { margin-bottom: 15px; text-align: right; }
+        .input-group label { display: block; margin-bottom: 8px; color: #5f6368; font-weight: bold; }
+        .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 15px; }
+        .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #1a73e8; outline: none; }
+        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background-color: #1557b0; }
+        .msg { margin-top: 10px; text-align: center; font-weight: bold; display: none; }
+        .error { color: #d93025; } .success { color: #188038; }
     </style>
 </head>
 <body>
 
-    <!-- واجهة تسجيل الدخول -->
+    <!-- واجهة الدخول -->
     <div class="card login-card" id="loginSection">
         <h2>منصة الأستاذ محمد رجب 🎓</h2>
-        <div class="input-group">
-            <label for="userCode">كود المستخدم</label>
-            <input type="text" id="userCode" placeholder="أدخل الكود الخاص بك (مثال: 1411)" required>
-        </div>
-        <div class="input-group">
-            <label for="userPass">كلمة المرور</label>
-            <input type="password" id="userPass" placeholder="أدخل كلمة المرور" required>
-        </div>
+        <div class="input-group"><label>كود المستخدم</label><input type="text" id="userCode" required></div>
+        <div class="input-group"><label>كلمة المرور</label><input type="password" id="userPass" required></div>
         <button id="loginBtn">تسجيل الدخول</button>
-        <div id="errorMessage" class="error-msg">كود المستخدم أو كلمة المرور غير صحيحة.</div>
+        <div id="errorMessage" class="msg error">البيانات غير صحيحة.</div>
     </div>
 
-    <!-- لوحة تحكم المدير -->
+    <!-- لوحة المدير -->
     <div class="card admin-card" id="adminDashboard" style="display: none;">
-        <h2>مرحباً بك يا أستاذ محمد 👨‍🏫 - لوحة الإدارة</h2>
+        <h2>لوحة الإدارة 👨‍🏫</h2>
         
-        <!-- قسم إضافة طالب -->
         <div class="dashboard-section">
-            <h3>إضافة طالب جديد 📝</h3>
-            <div class="input-group">
-                <label>اسم الطالب</label>
-                <input type="text" id="studentName" placeholder="مثال: أحمد محمود">
-            </div>
-            <div class="input-group">
-                <label>كود الطالب</label>
-                <input type="text" id="studentCode" placeholder="مثال: 2001">
-            </div>
-            <div class="input-group">
-                <label>كلمة المرور</label>
-                <input type="password" id="studentPass" placeholder="أدخل كلمة المرور">
-            </div>
-            <button id="addStudentBtn">حفظ بيانات الطالب</button>
-            <div id="addStudentMsg" class="success-msg">تمت إضافة الطالب بنجاح!</div>
+            <h3>إضافة طالب 📝</h3>
+            <div class="input-group"><label>اسم الطالب</label><input type="text" id="studentName"></div>
+            <div class="input-group"><label>كود الطالب</label><input type="text" id="studentCode"></div>
+            <div class="input-group"><label>كلمة المرور</label><input type="password" id="studentPass"></div>
+            <button id="addStudentBtn">حفظ</button>
+            <div id="addStudentMsg" class="msg success">تم الحفظ!</div>
         </div>
 
-        <!-- قسم إضافة موعد حصة -->
         <div class="dashboard-section">
-            <h3>إضافة موعد حصة 📅</h3>
-            <div class="input-group">
-                <label>كود الطالب</label>
-                <input type="text" id="sessionStudentCode" placeholder="أدخل كود الطالب">
-            </div>
-            <div class="input-group">
-                <label>تاريخ الحصة</label>
-                <input type="date" id="sessionDate">
-            </div>
-            <div class="input-group">
-                <label>وقت الحصة</label>
-                <input type="time" id="sessionTime">
-            </div>
-            <button id="addSessionBtn">حفظ الموعد</button>
-            <div id="addSessionMsg" class="success-msg">تم حفظ الموعد بنجاح!</div>
-        </div>
-
-        <!-- قسم تسجيل الحضور -->
-        <div class="dashboard-section">
-            <h3>تسجيل الحضور والغياب ✅❌</h3>
-            <div class="input-group">
-                <label>كود الطالب</label>
-                <input type="text" id="attStudentCode" placeholder="أدخل كود الطالب">
-            </div>
-            <div class="input-group">
-                <label>تاريخ الحصة</label>
-                <input type="date" id="attDate">
-            </div>
+            <h3>تسجيل الحضور والتقرير ✅</h3>
+            <div class="input-group"><label>كود الطالب</label><input type="text" id="attStudentCode"></div>
+            <div class="input-group"><label>تاريخ الحصة</label><input type="date" id="attDate"></div>
             <div class="input-group">
                 <label>حالة الطالب</label>
-                <select id="attStatus">
-                    <option value="حاضر">حاضر</option>
-                    <option value="غائب">غائب</option>
-                </select>
+                <select id="attStatus"><option value="حاضر">حاضر</option><option value="غائب">غائب</option></select>
             </div>
+            <div class="input-group"><label>تقرير الحصة والملاحظات</label><textarea id="attReport" rows="3" placeholder="اكتب تقييمك للطالب..."></textarea></div>
             <button id="addAttendanceBtn">حفظ السجل</button>
-            <div id="addAttendanceMsg" class="success-msg">تم تسجيل الحالة بنجاح!</div>
+            <div id="addAttendanceMsg" class="msg success">تم التسجيل!</div>
         </div>
-
     </div>
 
-    <!-- كود الجافاسكريبت لفايربيز -->
+    <!-- لوحة ولي الأمر (الطالب) -->
+    <div class="card admin-card" id="studentDashboard" style="display: none;">
+        <h2>مرحباً بك في منصة الطالب 🎓</h2>
+        <div class="dashboard-section">
+            <h3>سجل الحصص 📊</h3>
+            <button id="loadRecordsBtn">تحديث عرض السجلات (قريباً)</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
+        const app = initializeApp({
             apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
             authDomain: "ragabweb-c243a.firebaseapp.com",
-            projectId: "ragabweb-c243a",
-            storageBucket: "ragabweb-c243a.firebasestorage.app",
-            messagingSenderId: "995006462711",
-            appId: "1:995006462711:web:175c189f34cc15088d31f2"
-        };
-
-        const app = initializeApp(firebaseConfig);
+            projectId: "ragabweb-c243a"
+        });
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // واجهات المتصفح
-        const loginBtn = document.getElementById('loginBtn');
-        const errorMessage = document.getElementById('errorMessage');
-        const loginSection = document.getElementById('loginSection');
-        const adminDashboard = document.getElementById('adminDashboard');
+        function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
 
-        // 1. تسجيل الدخول
-        loginBtn.addEventListener('click', () => {
+        document.getElementById('loginBtn').addEventListener('click', () => {
             const code = document.getElementById('userCode').value;
-            const password = document.getElementById('userPass').value;
-            const email = code + "@ragabweb.com"; 
-
-            signInWithEmailAndPassword(auth, email, password)
-                .then(() => {
-                    loginSection.style.display = 'none';
-                    adminDashboard.style.display = 'block';
-                    errorMessage.style.display = 'none';
-                })
-                .catch(() => {
-                    errorMessage.style.display = 'block';
-                });
+            const pass = document.getElementById('userPass').value;
+            signInWithEmailAndPassword(auth, code + "@ragabweb.com", pass).then(() => {
+                document.getElementById('loginSection').style.display = 'none';
+                if(code === "1411") document.getElementById('adminDashboard').style.display = 'block';
+                else document.getElementById('studentDashboard').style.display = 'block';
+            }).catch(() => document.getElementById('errorMessage').style.display = 'block');
         });
 
-        // دالة مساعدة لإظهار رسائل النجاح
-        function showSuccessMsg(elementId) {
-            const el = document.getElementById(elementId);
-            el.style.display = 'block';
-            setTimeout(() => { el.style.display = 'none'; }, 3000);
-        }
-
-        // 2. حفظ بيانات الطالب
         document.getElementById('addStudentBtn').addEventListener('click', async () => {
-            const name = document.getElementById('studentName').value;
-            const code = document.getElementById('studentCode').value;
-            const pass = document.getElementById('studentPass').value;
-
-            if(!name || !code || !pass) { alert("الرجاء تعبئة جميع الحقول!"); return; }
-
-            try {
-                await setDoc(doc(db, "students", code), {
-                    name: name, code: code, password: pass, createdAt: new Date()
-                });
-                showSuccessMsg('addStudentMsg');
-                document.getElementById('studentName').value = '';
-                document.getElementById('studentCode').value = '';
-                document.getElementById('studentPass').value = '';
-            } catch (error) { alert("حدث خطأ في الحفظ."); console.log(error); }
+            const name = document.getElementById('studentName').value, code = document.getElementById('studentCode').value, pass = document.getElementById('studentPass').value;
+            if(!name || !code || !pass) return alert("أكمل الحقول!");
+            await setDoc(doc(db, "students", code), { name, code, password: pass });
+            showMsg('addStudentMsg');
         });
 
-        // 3. حفظ موعد الحصة
-        document.getElementById('addSessionBtn').addEventListener('click', async () => {
-            const code = document.getElementById('sessionStudentCode').value;
-            const date = document.getElementById('sessionDate').value;
-            const time = document.getElementById('sessionTime').value;
-
-            if(!code || !date || !time) { alert("الرجاء تعبئة جميع الحقول!"); return; }
-
-            try {
-                await addDoc(collection(db, "sessions"), {
-                    studentCode: code, date: date, time: time, createdAt: new Date()
-                });
-                showSuccessMsg('addSessionMsg');
-                document.getElementById('sessionStudentCode').value = '';
-                document.getElementById('sessionDate').value = '';
-                document.getElementById('sessionTime').value = '';
-            } catch (error) { alert("حدث خطأ في الحفظ."); }
-        });
-
-        // 4. تسجيل الحضور والغياب
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
-            const code = document.getElementById('attStudentCode').value;
-            const date = document.getElementById('attDate').value;
-            const status = document.getElementById('attStatus').value;
-
-            if(!code || !date) { alert("الرجاء إدخال كود الطالب والتاريخ!"); return; }
-
-            try {
-                await addDoc(collection(db, "attendance"), {
-                    studentCode: code, date: date, status: status, createdAt: new Date()
-                });
-                showSuccessMsg('addAttendanceMsg');
-                document.getElementById('attStudentCode').value = '';
-                document.getElementById('attDate').value = '';
-            } catch (error) { alert("حدث خطأ في الحفظ."); }
+            const code = document.getElementById('attStudentCode').value, date = document.getElementById('attDate').value;
+            const status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value;
+            if(!code || !date) return alert("أكمل الحقول الأساسية!");
+            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report });
+            showMsg('addAttendanceMsg');
         });
-
     </script>
 </body>
 </html>
