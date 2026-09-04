@@ -68,7 +68,7 @@
             <h3>إضافة طالب 📝</h3>
             <div class="input-group"><label>اسم الطالب</label><input type="text" id="studentName"></div>
             <div class="input-group"><label>كود الطالب</label><input type="text" id="studentCode"></div>
-            <div class="input-group"><label>سعر الحصة للطالب</label><input type="number" id="studentPrice"></div>
+            <div class="input-group"><label>السعر الأساسي للحصة</label><input type="number" id="studentPrice"></div>
             <div class="input-group"><label>كلمة المرور</label><input type="password" id="studentPass"></div>
             <button id="addStudentBtn">حفظ بيانات الطالب</button>
             <div id="addStudentMsg" class="msg success">تم الحفظ بنجاح!</div>
@@ -79,7 +79,7 @@
             <h3>بيانات جميع الطلاب 📋</h3>
             <div style="overflow-x: auto;">
                 <table class="data-table">
-                    <thead><tr><th>الاسم</th><th>الكود</th><th>كلمة المرور</th><th>سعر الحصة</th></tr></thead>
+                    <thead><tr><th>الاسم</th><th>الكود</th><th>كلمة المرور</th><th>سعر الحصة الأساسي</th></tr></thead>
                     <tbody id="studentsDataTableBody"></tbody>
                 </table>
             </div>
@@ -91,6 +91,10 @@
             <div class="input-group">
                 <label>اختر الطالب</label>
                 <select id="attStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
+            </div>
+            <div class="input-group">
+                <label>سعر هذه الحصة (يمكن تعديله إذا زاد/قل الوقت)</label>
+                <input type="number" id="attSessionPrice" placeholder="سيظهر السعر التلقائي هنا...">
             </div>
             <div class="input-group"><label>تاريخ الحصة</label><input type="date" id="attDate"></div>
             <div class="input-group">
@@ -251,13 +255,26 @@
 
                 const btn = document.createElement('button');
                 btn.className = 'student-list-btn';
-                btn.textContent = `👨‍🎓 ${data.name} - (السعر: ${data.price})`;
+                btn.textContent = `👨‍🎓 ${data.name} - (الأساسي: ${data.price})`;
                 btn.onclick = () => showStudentDetails(data.code, data.name);
                 studentsList.appendChild(btn);
 
                 dataTableBody.innerHTML += `<tr><td>${data.name}</td><td>${data.code}</td><td>${data.password}</td><td>${data.price}</td></tr>`;
             });
         }
+
+        // جلب السعر الأساسي للطالب تلقائياً عند اختياره في التحضير
+        document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
+            const code = e.target.value;
+            if(code) {
+                const snap = await getDoc(doc(db, "students", code));
+                if(snap.exists()) {
+                    document.getElementById('attSessionPrice').value = snap.data().price || 0;
+                }
+            } else {
+                document.getElementById('attSessionPrice').value = '';
+            }
+        });
 
         // --- عرض السجلات والأرشيف للمدير ---
         async function showStudentDetails(code, name) {
@@ -280,20 +297,20 @@
                 const data = docSnap.data();
                 const statusColor = data.status === "حاضر" ? "green" : "red";
                 const isPaid = data.isPaid === true;
+                const priceText = (data.status === "حاضر" && data.sessionPrice !== undefined) ? ` | <strong>مبلغ الحصة:</strong> ${data.sessionPrice}` : '';
                 
                 let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
                             <strong>التاريخ:</strong> ${data.date} <br> 
-                            <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> 
-                            ${isPaid ? '<span class="badge-paid">مؤرشفة ومسددة</span>' : (data.status === 'حاضر' ? '<span class="badge-unpaid">غير مسددة</span>' : '')}<br>
+                            <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> ${priceText}
+                            <br>${isPaid ? '<span class="badge-paid">مؤرشفة ومسددة</span>' : (data.status === 'حاضر' ? '<span class="badge-unpaid">غير مسددة</span>' : '')}<br>
                             <strong>التقرير:</strong> ${data.report || '-'}
                         </div>
                         <button class="delete-record-btn" onclick="deleteRecord('${docSnap.id}', '${code}', '${name}')">حذف</button>
                     </div>
                 `;
 
-                // تصنيف السجل: إذا كان مسدداً يذهب للأرشيف، غير ذلك يبقى في الحالية
                 if(isPaid) {
                     archivedList.innerHTML += recordHTML;
                     hasArchived = true;
@@ -338,9 +355,18 @@
         });
 
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
-            const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value;
+            const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
             if(!code || !date) return alert("اختر الطالب والتاريخ!");
-            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false });
+            
+            // حفظ السعر المخصص مع الحصة
+            await addDoc(collection(db, "attendance"), { 
+                studentCode: code, 
+                date, 
+                status, 
+                report, 
+                isPaid: false,
+                sessionPrice: Number(sessionPrice) || 0
+            });
             showMsg('addAttendanceMsg');
             document.getElementById('attReport').value = '';
         });
@@ -355,22 +381,24 @@
             
             const snap = await getDoc(doc(db, "students", code));
             if (!snap.exists()) return;
-            const price = snap.data().price || 0;
+            const defaultPrice = snap.data().price || 0;
             
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
             unpaidDocsToArchive = []; 
+            let totalAmount = 0; // إجمالي المبالغ بناءً على سعر كل حصة
             
             qSnap.forEach((d) => {
                 const data = d.data();
                 if (data.status === "حاضر" && data.isPaid !== true) {
                     if (data.date >= startDate && data.date <= endDate) {
                         unpaidDocsToArchive.push(d.id);
+                        // نجمع سعر الحصة المسجل، وإذا لم يكن موجوداً (لحصص قديمة) نستخدم الأساسي
+                        totalAmount += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice);
                     }
                 }
             });
             
-            const total = unpaidDocsToArchive.length * price;
             const resultDiv = document.getElementById('calcResult');
             resultDiv.style.display = 'block';
             
@@ -379,9 +407,8 @@
             } else {
                 resultDiv.innerHTML = `
                     <p>عدد الحصص غير المسددة: <strong>${unpaidDocsToArchive.length}</strong> حصة</p>
-                    <p>سعر الحصة: <strong>${price}</strong></p>
                     <hr style="margin: 10px 0; border-top: 1px solid #cce0ff;">
-                    <p>الإجمالي المطلوب: <strong style="font-size:20px; color:#1a73e8;">${total}</strong></p>
+                    <p>الإجمالي المطلوب: <strong style="font-size:20px; color:#1a73e8;">${totalAmount}</strong></p>
                     <button id="archiveBtn" style="background-color: #188038; margin-top: 15px;">تسديد وأرشفة هذه الحصص ✅</button>
                 `;
                 
@@ -393,7 +420,7 @@
                         alert("تمت أرشفة الحصص بنجاح!");
                         document.getElementById('calcBtn').click(); 
                         if (currentViewingStudentCode === code) {
-                            showStudentDetails(code, snap.data().name); // تحديث العرض إذا كان مفتوحاً
+                            showStudentDetails(code, snap.data().name);
                         }
                     }
                 });
@@ -407,10 +434,11 @@
             const summaryDiv = document.getElementById('studentSummary');
             
             const snap = await getDoc(doc(db, "students", code));
-            const price = snap.exists() ? (snap.data().price || 0) : 0;
+            const defaultPrice = snap.exists() ? (snap.data().price || 0) : 0;
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
             let unpaidCount = 0;
+            let totalOwed = 0; // المبلغ المستحق
             activeList.innerHTML = '';
             archivedList.innerHTML = '';
             let hasActive = false;
@@ -420,17 +448,24 @@
                 const data = docSnap.data();
                 const isPaid = data.isPaid === true;
                 const statusColor = data.status === "حاضر" ? "green" : "red";
+                const priceText = (data.status === "حاضر" && data.sessionPrice !== undefined) ? ` | <strong>مبلغ الحصة:</strong> ${data.sessionPrice}` : '';
                 
                 let badge = "";
                 if (data.status === "حاضر") {
-                    if (isPaid) badge = `<span class="badge-paid">مؤرشفة</span>`;
-                    else { unpaidCount++; badge = `<span class="badge-unpaid">غير مسددة</span>`; }
+                    if (isPaid) {
+                        badge = `<span class="badge-paid">مؤرشفة</span>`;
+                    } else { 
+                        unpaidCount++; 
+                        totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice);
+                        badge = `<span class="badge-unpaid">غير مسددة</span>`; 
+                    }
                 }
                 
                 let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
-                            <strong>التاريخ:</strong> ${data.date} | <span style="color:${statusColor}">${data.status}</span> ${badge}<br>
+                            <strong>التاريخ:</strong> ${data.date} | <span style="color:${statusColor}">${data.status}</span> ${priceText}
+                            <br>${badge}<br>
                             <strong>التقرير:</strong> ${data.report||'-'}
                         </div>
                     </div>`;
@@ -450,7 +485,7 @@
             summaryDiv.innerHTML = `
                 <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cce0ff;">
                     <p style="margin-bottom: 5px;"><strong>الحصص المتبقية (غير مسددة):</strong> ${unpaidCount}</p>
-                    <p><strong>المبلغ الإجمالي المطلوب:</strong> <span style="color: #1a73e8; font-size: 20px; font-weight: bold;">${unpaidCount * price}</span></p>
+                    <p><strong>المبلغ الإجمالي المطلوب:</strong> <span style="color: #1a73e8; font-size: 20px; font-weight: bold;">${totalOwed}</span></p>
                 </div>
             `;
         }
