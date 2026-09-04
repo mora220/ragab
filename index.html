@@ -11,6 +11,7 @@
         .admin-card { max-width: 800px; margin: 20px auto; margin-top: 20px; }
         h2 { color: #1a73e8; margin-bottom: 24px; text-align: center; }
         h3 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 5px; display: inline-block; }
+        h4 { color: #5f6368; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         .dashboard-section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 20px; background-color: #fafafa; }
         .input-group { margin-bottom: 15px; text-align: right; }
         .input-group label { display: block; margin-bottom: 8px; color: #5f6368; font-weight: bold; }
@@ -32,7 +33,6 @@
         .record-details { width: 100%; line-height: 1.6; }
         .delete-record-btn { background: #d93025; color: white; padding: 8px 12px; width: auto; font-size: 14px; margin-top: 0; }
         
-        /* تنسيقات الدردشة والجدول */
         .chat-box { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 300px; overflow-y: auto; background: #fff; margin-bottom: 10px; display: flex; flex-direction: column; }
         .message { margin-bottom: 10px; padding: 10px; border-radius: 8px; max-width: 80%; word-wrap: break-word; }
         .msg-admin { background-color: #e8f0fe; align-self: flex-start; border: 1px solid #cce0ff; }
@@ -108,10 +108,15 @@
             <div id="myStudentsList"></div>
             <div id="studentDetailsSection" style="display: none; margin-top: 20px; border-top: 2px dashed #ccc; padding-top: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h4 id="detailsStudentName" style="color: #1a73e8; margin: 0;"></h4>
+                    <h3 id="detailsStudentName" style="color: #1a73e8; margin: 0; border: none;"></h3>
                     <button id="deleteStudentBtn" class="btn-danger" style="width: auto; margin: 0; padding: 8px 15px;">حذف حساب الطالب 🗑️</button>
                 </div>
-                <div id="studentRecordsList"></div>
+                
+                <h4>الحصص الحالية (غير المسددة والغياب)</h4>
+                <div id="activeRecordsList"></div>
+                
+                <h4>الأرشيف (الحصص المسددة) 🗄️</h4>
+                <div id="archivedRecordsList"></div>
             </div>
         </div>
 
@@ -154,8 +159,13 @@
         
         <div class="dashboard-section">
             <h3>سجل الحصص والتقارير 📊</h3>
-            <div id="studentSummary"></div> <!-- سيظهر هنا إجمالي المبلغ المطلوب -->
-            <div id="studentPersonalRecords" style="margin-top: 15px;"></div>
+            <div id="studentSummary"></div> 
+            
+            <h4>الحصص الحالية</h4>
+            <div id="studentActiveRecords" style="margin-top: 15px;"></div>
+            
+            <h4>الأرشيف (الحصص المسددة) 🗄️</h4>
+            <div id="studentArchivedRecords" style="margin-top: 15px;"></div>
         </div>
 
         <!-- قسم الدردشة للطالب -->
@@ -189,7 +199,7 @@
         let currentStudentCodeForChat = ""; 
         let loggedInStudentCode = ""; 
         let currentViewingStudentCode = ""; 
-        let unpaidDocsToArchive = []; // لتخزين الحصص التي سيتم أرشفتها
+        let unpaidDocsToArchive = []; 
 
         function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
 
@@ -249,36 +259,52 @@
             });
         }
 
-        // --- عرض السجلات وحذف الطالب للمدير ---
+        // --- عرض السجلات والأرشيف للمدير ---
         async function showStudentDetails(code, name) {
             currentViewingStudentCode = code;
             document.getElementById('studentDetailsSection').style.display = 'block';
             document.getElementById('detailsStudentName').textContent = `سجلات: ${name}`;
-            const recordsList = document.getElementById('studentRecordsList');
-            recordsList.innerHTML = 'جاري التحميل...';
+            
+            const activeList = document.getElementById('activeRecordsList');
+            const archivedList = document.getElementById('archivedRecordsList');
+            activeList.innerHTML = 'جاري التحميل...';
+            archivedList.innerHTML = '';
 
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
-            recordsList.innerHTML = qSnap.empty ? '<p style="color: #5f6368;">لا توجد سجلات.</p>' : '';
+            
+            activeList.innerHTML = '';
+            let hasActive = false;
+            let hasArchived = false;
             
             qSnap.forEach((docSnap) => {
                 const data = docSnap.data();
                 const statusColor = data.status === "حاضر" ? "green" : "red";
-                let badge = "";
-                if(data.status === "حاضر") {
-                    badge = data.isPaid ? `<span class="badge-paid">مسددة</span>` : `<span class="badge-unpaid">غير مسددة</span>`;
-                }
+                const isPaid = data.isPaid === true;
                 
-                recordsList.innerHTML += `
+                let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
                             <strong>التاريخ:</strong> ${data.date} <br> 
-                            <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> ${badge}<br>
+                            <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> 
+                            ${isPaid ? '<span class="badge-paid">مؤرشفة ومسددة</span>' : (data.status === 'حاضر' ? '<span class="badge-unpaid">غير مسددة</span>' : '')}<br>
                             <strong>التقرير:</strong> ${data.report || '-'}
                         </div>
                         <button class="delete-record-btn" onclick="deleteRecord('${docSnap.id}', '${code}', '${name}')">حذف</button>
                     </div>
                 `;
+
+                // تصنيف السجل: إذا كان مسدداً يذهب للأرشيف، غير ذلك يبقى في الحالية
+                if(isPaid) {
+                    archivedList.innerHTML += recordHTML;
+                    hasArchived = true;
+                } else {
+                    activeList.innerHTML += recordHTML;
+                    hasActive = true;
+                }
             });
+            
+            if(!hasActive) activeList.innerHTML = '<p style="color: #5f6368;">لا توجد حصص حالية.</p>';
+            if(!hasArchived) archivedList.innerHTML = '<p style="color: #5f6368;">لا توجد حصص في الأرشيف.</p>';
         }
 
         window.deleteRecord = async function(docId, studentCode, studentName) {
@@ -314,7 +340,6 @@
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
             const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value;
             if(!code || !date) return alert("اختر الطالب والتاريخ!");
-            // تم إضافة isPaid: false افتراضياً
             await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false });
             showMsg('addAttendanceMsg');
             document.getElementById('attReport').value = '';
@@ -334,11 +359,10 @@
             
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
-            unpaidDocsToArchive = []; // تفريغ القائمة
+            unpaidDocsToArchive = []; 
             
             qSnap.forEach((d) => {
                 const data = d.data();
-                // نبحث عن الحصص (حاضر) و (غير مسددة) ضمن التاريخ المحدد
                 if (data.status === "حاضر" && data.isPaid !== true) {
                     if (data.date >= startDate && data.date <= endDate) {
                         unpaidDocsToArchive.push(d.id);
@@ -361,22 +385,25 @@
                     <button id="archiveBtn" style="background-color: #188038; margin-top: 15px;">تسديد وأرشفة هذه الحصص ✅</button>
                 `;
                 
-                // تفعيل زر الأرشفة
                 document.getElementById('archiveBtn').addEventListener('click', async () => {
-                    if(confirm("هل تم استلام المبلغ؟ ستتم أرشفة هذه الحصص ولن تظهر في الحسابات القادمة.")) {
+                    if(confirm("هل تم استلام المبلغ؟ سيتم نقل هذه الحصص إلى الأرشيف.")) {
                         for (let docId of unpaidDocsToArchive) {
                             await updateDoc(doc(db, "attendance", docId), { isPaid: true });
                         }
                         alert("تمت أرشفة الحصص بنجاح!");
-                        document.getElementById('calcBtn').click(); // تحديث الحساب فوراً
+                        document.getElementById('calcBtn').click(); 
+                        if (currentViewingStudentCode === code) {
+                            showStudentDetails(code, snap.data().name); // تحديث العرض إذا كان مفتوحاً
+                        }
                     }
                 });
             }
         });
 
-        // --- واجهة الطالب الأساسية ---
+        // --- واجهة الطالب (التقسيم لأرشيف وحالية) ---
         async function loadStudentData(code) {
-            const recordsList = document.getElementById('studentPersonalRecords');
+            const activeList = document.getElementById('studentActiveRecords');
+            const archivedList = document.getElementById('studentArchivedRecords');
             const summaryDiv = document.getElementById('studentSummary');
             
             const snap = await getDoc(doc(db, "students", code));
@@ -384,32 +411,42 @@
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
             let unpaidCount = 0;
-            recordsList.innerHTML = '';
+            activeList.innerHTML = '';
+            archivedList.innerHTML = '';
+            let hasActive = false;
+            let hasArchived = false;
             
             qSnap.forEach((docSnap) => {
                 const data = docSnap.data();
+                const isPaid = data.isPaid === true;
+                const statusColor = data.status === "حاضر" ? "green" : "red";
+                
                 let badge = "";
                 if (data.status === "حاضر") {
-                    if (data.isPaid) {
-                        badge = `<span class="badge-paid">مسددة</span>`;
-                    } else {
-                        unpaidCount++;
-                        badge = `<span class="badge-unpaid">غير مسددة</span>`;
-                    }
+                    if (isPaid) badge = `<span class="badge-paid">مؤرشفة</span>`;
+                    else { unpaidCount++; badge = `<span class="badge-unpaid">غير مسددة</span>`; }
                 }
                 
-                recordsList.innerHTML += `
+                let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
-                            <strong>التاريخ:</strong> ${data.date} | <span style="color:${data.status==='حاضر'?'green':'red'}">${data.status}</span> ${badge}<br>
+                            <strong>التاريخ:</strong> ${data.date} | <span style="color:${statusColor}">${data.status}</span> ${badge}<br>
                             <strong>التقرير:</strong> ${data.report||'-'}
                         </div>
                     </div>`;
+
+                if(isPaid) {
+                    archivedList.innerHTML += recordHTML;
+                    hasArchived = true;
+                } else {
+                    activeList.innerHTML += recordHTML;
+                    hasActive = true;
+                }
             });
             
-            if (recordsList.innerHTML === '') recordsList.innerHTML = '<p>لا توجد سجلات.</p>';
+            if(!hasActive) activeList.innerHTML = '<p>لا توجد سجلات حالية.</p>';
+            if(!hasArchived) archivedList.innerHTML = '<p>لا توجد سجلات في الأرشيف.</p>';
             
-            // تحديث لوحة الطالب بالمبلغ الإجمالي المطلوب
             summaryDiv.innerHTML = `
                 <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cce0ff;">
                     <p style="margin-bottom: 5px;"><strong>الحصص المتبقية (غير مسددة):</strong> ${unpaidCount}</p>
