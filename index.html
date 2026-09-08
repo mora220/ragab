@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- إعدادات تطبيق الويب (لتحويله لتطبيق على شاشة الهاتف) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="منصة الأستاذ">
@@ -34,6 +33,8 @@
         .btn-danger:hover { background-color: #b3261e; }
         .btn-print { background-color: #5f6368; margin-bottom: 15px; }
         .btn-print:hover { background-color: #3c4043; }
+        .btn-due { background-color: #fbbc05; color: #333; margin-bottom: 15px; border: 1px solid #f2a600; }
+        .btn-due:hover { background-color: #f2a600; }
         .logout-btn { background-color: #5f6368; margin-bottom: 20px; }
         .logout-btn:hover { background-color: #3c4043; }
         
@@ -60,7 +61,6 @@
         .badge-paid { color: green; font-size: 12px; border: 1px solid green; padding: 2px 5px; border-radius: 4px; float: left; }
         .badge-unpaid { color: red; font-size: 12px; border: 1px solid red; padding: 2px 5px; border-radius: 4px; float: left; }
 
-        /* تنسيقات خاصة بالطباعة لتحميل الـ PDF */
         @media print {
             body { background-color: white; padding: 0; }
             .card { box-shadow: none; border: none; max-width: 100%; margin: 0; padding: 0; }
@@ -125,7 +125,7 @@
                 <label>حالة الطالب</label>
                 <select id="attStatus"><option value="حاضر">حاضر</option><option value="غائب">غائب</option></select>
             </div>
-            <div class="input-group"><label>تقرير الحصة والملاحظات</label><textarea id="attReport" rows="3"></textarea></div>
+            <div class="input-group"><label>ملاحظات الحصة</label><textarea id="attReport" rows="3"></textarea></div>
             <button id="addAttendanceBtn">حفظ السجل</button>
             <div id="addAttendanceMsg" class="msg success">تم التسجيل بنجاح!</div>
         </div>
@@ -178,25 +178,28 @@
         </div>
     </div>
 
-    <!-- لوحة ولي الأمر (الطالب) -->
+    <!-- لوحة ولي الأمر (الطالب) - بتنسيق جديد تربوي -->
     <div class="card admin-card" id="studentDashboard" style="display: none;">
         <button id="studentLogoutBtn" class="logout-btn no-print">تسجيل الخروج 🚪</button>
         
-        <!-- عنوان الطالب الديناميكي -->
         <h2 id="studentWelcomeTitle" style="font-size: 28px;">جاري التحميل...</h2>
         
         <div class="dashboard-section">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a73e8; margin-bottom: 15px; padding-bottom: 5px;">
-                <h3 style="border: none; margin: 0; padding: 0;">سجل الحصص والتقارير 📊</h3>
-                <button id="printReportBtn" class="btn-print no-print" style="width: auto; margin: 0; padding: 8px 15px;">🖨️ طباعة / حفظ كـ PDF</button>
+                <h3 style="border: none; margin: 0; padding: 0;">سجل الحصص 📊</h3>
+                <button id="printReportBtn" class="btn-print no-print" style="width: auto; margin: 0; padding: 8px 15px;">🖨️ طباعة التقرير</button>
             </div>
             
-            <div id="studentSummary"></div> 
+            <!-- زر وتفاصيل المبالغ المستحقة للطالب -->
+            <button id="toggleDueBtn" class="btn-due no-print">💰 عرض المبالغ المستحقة</button>
+            <div id="dueAmountDetails" style="display: none; background: #fff8e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffecb3; line-height: 1.8;">
+                <!-- سيتم ملؤه عبر الجافاسكريبت -->
+            </div>
             
             <h4>الحصص الحالية</h4>
             <div id="studentActiveRecords" style="margin-top: 15px;"></div>
             
-            <h4>الأرشيف (الحصص المسددة) 🗄️</h4>
+            <h4>السجل السابق 🗄️</h4>
             <div id="studentArchivedRecords" style="margin-top: 15px;"></div>
         </div>
 
@@ -213,7 +216,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        // إضافة onAuthStateChanged لحفظ الجلسة
         import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -236,19 +238,17 @@
 
         function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
 
-        // --- دالة تحويل التاريخ ليظهر معه اسم اليوم ---
         function formatDateAr(dateString) {
             if(!dateString) return '';
             const d = new Date(dateString);
             if(isNaN(d)) return dateString;
             const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
-            return d.toLocaleDateString('ar-EG', options); // مثال: الثلاثاء، 8/9/2026
+            return d.toLocaleDateString('ar-EG', options); 
         }
 
         // --- نظام حفظ تسجيل الدخول التلقائي ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // استخراج الكود من الإيميل (لأننا سجلناهم بـ code@ragabweb.com)
                 const code = user.email.split('@')[0];
                 document.getElementById('loginSection').style.display = 'none';
                 
@@ -258,7 +258,7 @@
                 } else {
                     const studentSnap = await getDoc(doc(db, "students", code));
                     if(!studentSnap.exists()) {
-                        await signOut(auth); // طرد المستخدم إذا تم حذفه
+                        await signOut(auth); 
                         document.getElementById('loginSection').style.display = 'block';
                         return;
                     }
@@ -274,23 +274,23 @@
             }
         });
 
-        // --- تسجيل الدخول اليدوي ---
         document.getElementById('loginBtn').addEventListener('click', async () => {
             const code = document.getElementById('userCode').value;
             const pass = document.getElementById('userPass').value;
-            try {
-                // سيقوم onAuthStateChanged بالتقاط التغيير وفتح اللوحة تلقائياً
-                await signInWithEmailAndPassword(auth, code + "@ragabweb.com", pass);
-            } catch(e) { document.getElementById('errorMessage').style.display = 'block'; }
+            try { await signInWithEmailAndPassword(auth, code + "@ragabweb.com", pass); } 
+            catch(e) { document.getElementById('errorMessage').style.display = 'block'; }
         });
 
         const handleLogout = () => { signOut(auth); };
         document.getElementById('adminLogoutBtn').addEventListener('click', handleLogout);
         document.getElementById('studentLogoutBtn').addEventListener('click', handleLogout);
 
-        // --- طباعة التقرير (للطالب) ---
-        document.getElementById('printReportBtn').addEventListener('click', () => {
-            window.print(); // يفتح نافذة الطباعة/الحفظ كـ PDF الخاصة بالمتصفح
+        document.getElementById('printReportBtn').addEventListener('click', () => { window.print(); });
+
+        // إظهار/إخفاء المبالغ المستحقة للطالب
+        document.getElementById('toggleDueBtn').addEventListener('click', () => {
+            const dueDiv = document.getElementById('dueAmountDetails');
+            dueDiv.style.display = dueDiv.style.display === 'none' ? 'block' : 'none';
         });
 
         // --- جلب بيانات الطلاب للمدير ---
@@ -327,7 +327,7 @@
             } else { document.getElementById('attSessionPrice').value = ''; }
         });
 
-        // --- عرض السجلات والأرشيف للمدير ---
+        // --- عرض السجلات للمدير (بها الأسعار لإدارة العمل) ---
         async function showStudentDetails(code, name) {
             currentViewingStudentCode = code;
             document.getElementById('studentDetailsSection').style.display = 'block';
@@ -347,15 +347,15 @@
                 const statusColor = data.status === "حاضر" ? "green" : "red";
                 const isPaid = data.isPaid === true;
                 const priceText = (data.status === "حاضر" && data.sessionPrice !== undefined) ? ` | <strong>مبلغ الحصة:</strong> ${data.sessionPrice}` : '';
-                const displayDate = formatDateAr(data.date); // استخدام التاريخ المنسق
+                const displayDate = formatDateAr(data.date); 
                 
                 let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
-                            <strong>التاريخ:</strong> ${displayDate} <br> 
+                            <strong>اليوم والتاريخ:</strong> ${displayDate} <br> 
                             <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> ${priceText}
                             <br>${isPaid ? '<span class="badge-paid">مؤرشفة ومسددة</span>' : (data.status === 'حاضر' ? '<span class="badge-unpaid">غير مسددة</span>' : '')}<br>
-                            <strong>التقرير:</strong> ${data.report || '-'}
+                            <strong>الملاحظات:</strong> ${data.report || '-'}
                         </div>
                         <button class="delete-record-btn no-print" onclick="deleteRecord('${docSnap.id}', '${code}', '${name}')">حذف</button>
                     </div>
@@ -407,7 +407,7 @@
             document.getElementById('attReport').value = '';
         });
 
-        // --- الحساب الشهري والأرشفة ---
+        // --- الحساب الشهري والأرشفة للمدير ---
         document.getElementById('calcBtn').addEventListener('click', async () => {
             const code = document.getElementById('calcStudentSelect').value, startDate = document.getElementById('calcStartDate').value, endDate = document.getElementById('calcEndDate').value;
             if(!code || !startDate || !endDate) return alert("الرجاء اختيار الطالب وتحديد فترة التاريخ من وإلى!");
@@ -453,14 +453,13 @@
             }
         });
 
-        // --- واجهة الطالب الاحترافية ---
+        // --- واجهة الطالب (بدون عرض الأسعار في السجلات) ---
         async function loadStudentData(code, studentName) {
-            // تحديث عنوان الترحيب باسم الطالب
             document.getElementById('studentWelcomeTitle').textContent = `مرحباً بك يا ${studentName} 🎓`;
             
             const activeList = document.getElementById('studentActiveRecords');
             const archivedList = document.getElementById('studentArchivedRecords');
-            const summaryDiv = document.getElementById('studentSummary');
+            const dueDiv = document.getElementById('dueAmountDetails');
             
             const snap = await getDoc(doc(db, "students", code));
             const defaultPrice = snap.exists() ? (snap.data().price || 0) : 0;
@@ -468,6 +467,8 @@
             
             let unpaidCount = 0;
             let totalOwed = 0; 
+            let unpaidDatesList = [];
+            
             activeList.innerHTML = ''; archivedList.innerHTML = '';
             let hasActive = false, hasArchived = false;
             
@@ -475,21 +476,21 @@
                 const data = docSnap.data();
                 const isPaid = data.isPaid === true;
                 const statusColor = data.status === "حاضر" ? "green" : "red";
-                const priceText = (data.status === "حاضر" && data.sessionPrice !== undefined) ? ` | <strong>المبلغ:</strong> ${data.sessionPrice}` : '';
                 const displayDate = formatDateAr(data.date);
                 
-                let badge = "";
-                if (data.status === "حاضر") {
-                    if (isPaid) badge = `<span class="badge-paid">مؤرشفة</span>`;
-                    else { unpaidCount++; totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice); badge = `<span class="badge-unpaid">غير مسددة</span>`; }
+                if (data.status === "حاضر" && !isPaid) {
+                    unpaidCount++; 
+                    totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice); 
+                    unpaidDatesList.push(displayDate);
                 }
                 
+                // تصميم السجل للطالب: بدون سعر، فقط اليوم والتاريخ، الحالة، والملاحظات
                 let recordHTML = `
                     <div class="record-card">
                         <div class="record-details">
-                            <strong>التاريخ:</strong> ${displayDate} | <span style="color:${statusColor}">${data.status}</span> ${priceText}
-                            <br>${badge}<br>
-                            <strong>التقرير:</strong> ${data.report||'-'}
+                            <strong>اليوم والتاريخ:</strong> ${displayDate} <br>
+                            <strong>حالة الحضور:</strong> <span style="color:${statusColor}; font-weight: bold;">${data.status}</span><br>
+                            <strong>ملاحظات الحصة:</strong> ${data.report||'لا توجد ملاحظات'}
                         </div>
                     </div>`;
 
@@ -498,14 +499,19 @@
             });
             
             if(!hasActive) activeList.innerHTML = '<p>لا توجد سجلات حالية.</p>';
-            if(!hasArchived) archivedList.innerHTML = '<p>لا توجد سجلات في الأرشيف.</p>';
+            if(!hasArchived) archivedList.innerHTML = '<p>لا توجد سجلات سابقة.</p>';
             
-            summaryDiv.innerHTML = `
-                <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #cce0ff;">
-                    <p style="margin-bottom: 5px;"><strong>الحصص المتبقية (غير مسددة):</strong> ${unpaidCount}</p>
-                    <p><strong>المبلغ الإجمالي المطلوب:</strong> <span style="color: #1a73e8; font-size: 20px; font-weight: bold;">${totalOwed}</span></p>
-                </div>
-            `;
+            // تحديث قسم المبالغ المستحقة (لا يظهر إلا عند الضغط على الزر)
+            if (unpaidCount > 0) {
+                dueDiv.innerHTML = `
+                    <p style="color: #d93025; font-weight: bold; font-size: 18px; margin-bottom: 10px;">الإجمالي المطلوب: ${totalOwed}</p>
+                    <p><strong>عدد الحصص غير المدفوعة:</strong> ${unpaidCount}</p>
+                    <hr style="margin: 10px 0; border-top: 1px solid #ffecb3;">
+                    <p><strong>تواريخ الحصص:</strong><br> <span style="color: #555;">${unpaidDatesList.join('<br>')}</span></p>
+                `;
+            } else {
+                dueDiv.innerHTML = `<p style="color: green; font-weight: bold;">ليس لديك مبالغ مستحقة حالياً. 🌟</p>`;
+            }
         }
 
         // --- نظام الدردشة الفورية ---
