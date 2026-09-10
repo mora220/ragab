@@ -14,39 +14,43 @@
         body { background-color: #f0f2f5; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 20px; }
         
         .card { background-color: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-top: 50px; }
-        .admin-card { max-width: 800px; margin: 20px auto; margin-top: 20px; }
+        .admin-card { max-width: 900px; margin: 20px auto; padding: 30px; }
         
         h2 { color: #1a73e8; margin-bottom: 24px; text-align: center; }
         h3 { color: #333; margin-bottom: 15px; border-bottom: 2px solid #1a73e8; padding-bottom: 5px; display: inline-block; }
         h4 { color: #5f6368; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         
-        .dashboard-section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; margin-top: 20px; background-color: #fafafa; }
+        /* نظام التبويبات */
+        .tabs-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { flex: 1; min-width: 120px; background: #e8f0fe; color: #1a73e8; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.3s; margin: 0; }
+        .tab-btn:hover { background: #d2e3fc; }
+        .tab-btn.active { background: #1a73e8; color: white; }
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .dashboard-section { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background-color: #fafafa; margin-bottom: 20px; }
         
         .input-group { margin-bottom: 15px; text-align: right; }
         .input-group label { display: block; margin-bottom: 8px; color: #5f6368; font-weight: bold; }
         .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 15px; }
         .input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: #1a73e8; outline: none; }
+        .input-group input:disabled { background-color: #e0e0e0; cursor: not-allowed; }
         
         button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.3s; }
         button:hover { background-color: #1557b0; }
         .btn-danger { background-color: #d93025; }
         .btn-danger:hover { background-color: #b3261e; }
-        .btn-print { background-color: #5f6368; margin-bottom: 15px; }
-        .btn-print:hover { background-color: #3c4043; }
-        .btn-due { background-color: #fbbc05; color: #333; margin-bottom: 15px; border: 1px solid #f2a600; }
-        .btn-due:hover { background-color: #f2a600; }
-        .logout-btn { background-color: #5f6368; margin-bottom: 20px; }
-        .logout-btn:hover { background-color: #3c4043; }
+        .btn-success { background-color: #188038; }
+        .btn-success:hover { background-color: #13652c; }
+        .btn-secondary { background-color: #5f6368; }
+        .logout-btn { background-color: #5f6368; margin-bottom: 20px; width: auto; padding: 8px 15px; float: left; }
         
         .msg { margin-top: 10px; text-align: center; font-weight: bold; display: none; }
         .error { color: #d93025; } .success { color: #188038; }
-        .calc-result { background: #e8f0fe; padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #cce0ff; display: none; line-height: 1.8; }
         
-        .student-list-btn { background-color: white; color: #1a73e8; border: 1px solid #1a73e8; margin-bottom: 10px; text-align: right; padding: 10px; }
-        .student-list-btn:hover { background-color: #f0f8ff; }
-        .record-card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .record-details { width: 100%; line-height: 1.6; }
-        .delete-record-btn { background: #d93025; color: white; padding: 8px 12px; width: auto; font-size: 14px; margin-top: 0; }
+        .record-card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
+        .record-details { flex: 1; min-width: 200px; line-height: 1.6; }
         
         .chat-box { border: 1px solid #ddd; border-radius: 8px; padding: 15px; height: 300px; overflow-y: auto; background: #fff; margin-bottom: 10px; display: flex; flex-direction: column; }
         .message { margin-bottom: 10px; padding: 10px; border-radius: 8px; max-width: 80%; word-wrap: break-word; }
@@ -58,16 +62,14 @@
         .data-table th, .data-table td { padding: 12px; border: 1px solid #ddd; }
         .data-table th { background-color: #f0f2f5; color: #333; }
         
-        .badge-paid { color: green; font-size: 12px; border: 1px solid green; padding: 2px 5px; border-radius: 4px; float: left; }
-        .badge-unpaid { color: red; font-size: 12px; border: 1px solid red; padding: 2px 5px; border-radius: 4px; float: left; }
+        .badge-paid { color: green; font-size: 12px; border: 1px solid green; padding: 2px 5px; border-radius: 4px; display: inline-block; }
+        .badge-unpaid { color: red; font-size: 12px; border: 1px solid red; padding: 2px 5px; border-radius: 4px; display: inline-block; }
 
         @media print {
             body { background-color: white; padding: 0; }
             .card { box-shadow: none; border: none; max-width: 100%; margin: 0; padding: 0; }
             .no-print { display: none !important; }
             .dashboard-section { border: none; background: white; margin-top: 0; padding: 0; }
-            .record-card { border: 1px solid #000; break-inside: avoid; }
-            h2 { color: #000; }
         }
     </style>
 </head>
@@ -76,49 +78,65 @@
     <!-- واجهة الدخول -->
     <div class="card login-card" id="loginSection">
         <h2>منصة الأستاذ محمد رجب 🎓</h2>
-        <div class="input-group"><label>كود المستخدم</label><input type="text" id="userCode" required placeholder="أدخل الكود الخاص بك"></div>
+        <div class="input-group"><label>كود المستخدم (طالب / ولي أمر / مدير)</label><input type="text" id="userCode" required placeholder="أدخل الكود"></div>
         <div class="input-group"><label>كلمة المرور</label><input type="password" id="userPass" required placeholder="أدخل كلمة المرور"></div>
         <button id="loginBtn">تسجيل الدخول</button>
-        <div id="errorMessage" class="msg error">البيانات غير صحيحة أو الحساب محذوف.</div>
+        <div id="errorMessage" class="msg error">البيانات غير صحيحة.</div>
     </div>
 
     <!-- لوحة المدير -->
     <div class="card admin-card no-print" id="adminDashboard" style="display: none;">
-        <button id="adminLogoutBtn" class="logout-btn">تسجيل الخروج 🚪</button>
-        <h2>لوحة الإدارة 👨‍🏫</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin:0;">لوحة الإدارة 👨‍🏫</h2>
+            <button id="adminLogoutBtn" class="logout-btn">تسجيل الخروج 🚪</button>
+        </div>
+
+        <!-- أزرار التبويبات -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" id="tabBtnAdd" onclick="openTab('tab-add')">إضافة / تعديل طالب</button>
+            <button class="tab-btn" onclick="openTab('tab-list')">بيانات الطلاب</button>
+            <button class="tab-btn" onclick="openTab('tab-att')">التحضير</button>
+            <button class="tab-btn" onclick="openTab('tab-finance')">الماليات والسداد</button>
+            <button class="tab-btn" onclick="openTab('tab-reports')">إدارة السجلات</button>
+            <button class="tab-btn" onclick="openTab('tab-chat')">الدردشة</button>
+        </div>
         
-        <!-- قسم إضافة طالب -->
-        <div class="dashboard-section">
-            <h3>إضافة طالب 📝</h3>
+        <!-- تبويب: إضافة / تعديل طالب -->
+        <div id="tab-add" class="tab-content active dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="addTabTitle">إضافة طالب 📝</h3>
+                <button id="cancelEditStudentBtn" class="btn-secondary" style="display: none; width: auto; padding: 5px 15px; margin: 0;">إلغاء التعديل</button>
+            </div>
             <div class="input-group"><label>اسم الطالب</label><input type="text" id="studentName"></div>
             <div class="input-group"><label>كود الطالب</label><input type="text" id="studentCode"></div>
+            <div class="input-group"><label>كود حساب ولي الأمر (يجمع كل أبنائه - اختياري)</label><input type="text" id="parentCode" placeholder="مثال: 5000"></div>
             <div class="input-group"><label>السعر الأساسي للحصة</label><input type="number" id="studentPrice"></div>
-            <div class="input-group"><label>كلمة المرور</label><input type="password" id="studentPass"></div>
+            <div class="input-group"><label>كلمة المرور (للطالب وولي الأمر إن وجد)</label><input type="password" id="studentPass"></div>
             <button id="addStudentBtn">حفظ بيانات الطالب</button>
             <div id="addStudentMsg" class="msg success">تم الحفظ بنجاح!</div>
         </div>
 
-        <!-- قسم بيانات جميع الطلاب -->
-        <div class="dashboard-section">
+        <!-- تبويب: بيانات الطلاب -->
+        <div id="tab-list" class="tab-content dashboard-section">
             <h3>بيانات جميع الطلاب 📋</h3>
             <div style="overflow-x: auto;">
                 <table class="data-table">
-                    <thead><tr><th>الاسم</th><th>الكود</th><th>كلمة المرور</th><th>سعر الحصة الأساسي</th></tr></thead>
+                    <thead><tr><th>الاسم</th><th>كود الطالب</th><th>كود الولي</th><th>كلمة المرور</th><th>السعر</th><th>إجراءات</th></tr></thead>
                     <tbody id="studentsDataTableBody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- قسم التحضير -->
-        <div class="dashboard-section">
+        <!-- تبويب: التحضير -->
+        <div id="tab-att" class="tab-content dashboard-section">
             <h3>تحضير الطالب والتقرير ✅</h3>
             <div class="input-group">
                 <label>اختر الطالب</label>
                 <select id="attStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
             </div>
             <div class="input-group">
-                <label>سعر هذه الحصة (يمكن تعديله)</label>
-                <input type="number" id="attSessionPrice" placeholder="سيظهر السعر التلقائي هنا...">
+                <label>سعر هذه الحصة</label>
+                <input type="number" id="attSessionPrice" placeholder="السعر التلقائي...">
             </div>
             <div class="input-group"><label>تاريخ الحصة</label><input type="date" id="attDate"></div>
             <div class="input-group">
@@ -130,85 +148,94 @@
             <div id="addAttendanceMsg" class="msg success">تم التسجيل بنجاح!</div>
         </div>
 
-        <!-- قسم طلابي وتقاريرهم وحذف الطلاب -->
-        <div class="dashboard-section">
-            <h3>طلابي 👨‍🎓 (التقارير والحذف)</h3>
-            <div id="myStudentsList"></div>
-            <div id="studentDetailsSection" style="display: none; margin-top: 20px; border-top: 2px dashed #ccc; padding-top: 20px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h3 id="detailsStudentName" style="color: #1a73e8; margin: 0; border: none;"></h3>
-                    <button id="deleteStudentBtn" class="btn-danger" style="width: auto; margin: 0; padding: 8px 15px;">حذف حساب الطالب 🗑️</button>
+        <!-- تبويب: الماليات والسداد -->
+        <div id="tab-finance" class="tab-content dashboard-section">
+            <h3>الحساب المالي والسداد 💰</h3>
+            <div class="input-group">
+                <label>اختر الطالب لاستعراض الحصص غير المسددة</label>
+                <select id="calcStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
+            </div>
+            <button id="fetchDuesBtn">عرض المبالغ المستحقة</button>
+            
+            <div id="financialResults" style="display: none; margin-top: 20px;">
+                <div style="background: #e8f0fe; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="margin-top:0;">إجمالي المطلوب: <span id="totalDueAmount" style="color: #1a73e8; font-size: 24px;">0</span></h4>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="payAllBtn" class="btn-success">✅ تسديد وأرشفة الكل</button>
+                        <button id="printInvoiceBtn" class="btn-secondary">🖨️ طباعة تقرير الحساب PDF</button>
+                    </div>
                 </div>
-                <h4>الحصص الحالية (غير المسددة والغياب)</h4>
+                <h4>تفاصيل الحصص غير المسددة:</h4>
+                <div id="unpaidSessionsList"></div>
+            </div>
+        </div>
+
+        <!-- تبويب: إدارة السجلات والتعديل/الحذف -->
+        <div id="tab-reports" class="tab-content dashboard-section">
+            <h3>إدارة السجلات 👨‍🎓</h3>
+            <div class="input-group">
+                <label>اختر الطالب لعرض سجلاته</label>
+                <select id="manageStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
+            </div>
+            <div id="studentDetailsSection" style="display: none; margin-top: 20px;">
+                <button id="deleteStudentBtn" class="btn-danger" style="margin-bottom: 15px;">🗑️ حذف حساب الطالب نهائياً</button>
+                <h4>الحصص الحالية</h4>
                 <div id="activeRecordsList"></div>
-                <h4>الأرشيف (الحصص المسددة) 🗄️</h4>
+                <h4>الأرشيف (مسددة)</h4>
                 <div id="archivedRecordsList"></div>
             </div>
         </div>
 
-        <!-- قسم الدردشة السحابية للمدير -->
-        <div class="dashboard-section">
+        <!-- تبويب: الدردشة -->
+        <div id="tab-chat" class="tab-content dashboard-section">
             <h3>الدردشة السحابية 💬</h3>
             <div class="input-group">
-                <label>اختر الطالب للمراسلة</label>
+                <label>اختر الطالب</label>
                 <select id="chatStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
             </div>
-            <div class="chat-box" id="adminChatBox">
-                <p style="text-align:center; color:#888; margin-top: 50px;">اختر طالباً لبدء الدردشة</p>
-            </div>
+            <div class="chat-box" id="adminChatBox"><p style="text-align:center; color:#888;">اختر طالباً...</p></div>
             <div class="input-group" style="display: flex; gap: 10px;">
-                <input type="text" id="adminChatInput" placeholder="اكتب رسالتك هنا..." style="margin-bottom: 0;">
+                <input type="text" id="adminChatInput" placeholder="اكتب رسالتك..." style="margin-bottom: 0;">
                 <button id="adminSendBtn" style="width: 100px; margin-top: 0;">إرسال</button>
             </div>
         </div>
-
-        <!-- قسم الحساب الشهري والأرشفة -->
-        <div class="dashboard-section">
-            <h3>الحساب المالي والأرشفة 💰</h3>
-            <div class="input-group">
-                <label>اختر الطالب</label>
-                <select id="calcStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="input-group" style="flex: 1;"><label>من تاريخ</label><input type="date" id="calcStartDate"></div>
-                <div class="input-group" style="flex: 1;"><label>إلى تاريخ</label><input type="date" id="calcEndDate"></div>
-            </div>
-            <button id="calcBtn">احسب الإجمالي للفترة</button>
-            <div id="calcResult" class="calc-result"></div>
-        </div>
     </div>
 
-    <!-- لوحة ولي الأمر (الطالب) - بتنسيق جديد تربوي -->
+    <!-- لوحة ولي الأمر / الطالب -->
     <div class="card admin-card" id="studentDashboard" style="display: none;">
-        <button id="studentLogoutBtn" class="logout-btn no-print">تسجيل الخروج 🚪</button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 id="studentWelcomeTitle" style="font-size: 24px; margin:0;">جاري التحميل...</h2>
+            <button id="studentLogoutBtn" class="logout-btn no-print" style="margin:0;">تسجيل الخروج 🚪</button>
+        </div>
         
-        <h2 id="studentWelcomeTitle" style="font-size: 28px;">جاري التحميل...</h2>
-        
-        <div class="dashboard-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a73e8; margin-bottom: 15px; padding-bottom: 5px;">
-                <h3 style="border: none; margin: 0; padding: 0;">سجل الحصص 📊</h3>
-                <button id="printReportBtn" class="btn-print no-print" style="width: auto; margin: 0; padding: 8px 15px;">🖨️ طباعة التقرير</button>
+        <div id="parentSelectorDiv" class="dashboard-section no-print" style="display: none; background: #e8f0fe; border-color: #cce0ff;">
+            <h3>مرحباً بك يا ولي الأمر 👨‍👩‍👧‍👦</h3>
+            <div class="input-group" style="margin-bottom: 0;">
+                <label>اختر الابن لمتابعة تقاريره:</label>
+                <select id="parentKidsSelect"></select>
             </div>
-            
-            <!-- زر وتفاصيل المبالغ المستحقة للطالب -->
-            <button id="toggleDueBtn" class="btn-due no-print">💰 عرض المبالغ المستحقة</button>
-            <div id="dueAmountDetails" style="display: none; background: #fff8e1; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ffecb3; line-height: 1.8;">
-                <!-- سيتم ملؤه عبر الجافاسكريبت -->
-            </div>
-            
-            <h4>الحصص الحالية</h4>
-            <div id="studentActiveRecords" style="margin-top: 15px;"></div>
-            
-            <h4>السجل السابق 🗄️</h4>
-            <div id="studentArchivedRecords" style="margin-top: 15px;"></div>
         </div>
 
-        <!-- قسم الدردشة للطالب -->
+        <div class="dashboard-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1a73e8; margin-bottom: 15px; padding-bottom: 5px;">
+                <h3 style="border: none; margin: 0;">سجل الحصص 📊</h3>
+                <button onclick="window.print()" class="btn-secondary no-print" style="width: auto; margin: 0; padding: 8px 15px;">🖨️ طباعة التقرير</button>
+            </div>
+            
+            <button id="toggleDueBtn" class="no-print" style="background: #fbbc05; color: #333; margin-bottom: 15px;">💰 عرض المبالغ المستحقة</button>
+            <div id="dueAmountDetails" style="display: none; background: #fff8e1; padding: 15px; border-radius: 8px; margin-bottom: 15px;"></div>
+            
+            <h4>الحصص الحالية</h4>
+            <div id="studentActiveRecords"></div>
+            <h4>السجل السابق 🗄️</h4>
+            <div id="studentArchivedRecords"></div>
+        </div>
+
         <div class="dashboard-section no-print">
             <h3>تواصل مع الأستاذ 💬</h3>
             <div class="chat-box" id="studentChatBox"></div>
             <div class="input-group" style="display: flex; gap: 10px;">
-                <input type="text" id="studentChatInput" placeholder="اكتب رسالتك للأستاذ..." style="margin-bottom: 0;">
+                <input type="text" id="studentChatInput" placeholder="رسالتك..." style="margin-bottom: 0;">
                 <button id="studentSendBtn" style="width: 100px; margin-top: 0;">إرسال</button>
             </div>
         </div>
@@ -219,34 +246,40 @@
         import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ",
-            authDomain: "ragabweb-c243a.firebaseapp.com",
-            projectId: "ragabweb-c243a"
-        };
-
-        const app = initializeApp(firebaseConfig);
+        const app = initializeApp({ apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ", authDomain: "ragabweb-c243a.firebaseapp.com", projectId: "ragabweb-c243a" });
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+        const secondaryApp = initializeApp(app.options, "SecondaryApp");
         const secondaryAuth = getAuth(secondaryApp);
 
-        let currentStudentCodeForChat = ""; 
-        let loggedInStudentCode = ""; 
-        let currentViewingStudentCode = ""; 
-        let unpaidDocsToArchive = []; 
+        let currentStudentCodeForChat = "", loggedInStudentCode = "", currentViewingStudentCode = ""; 
+        let unpaidDocsList = []; 
+        let currentStudentNameForInvoice = "";
 
-        function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
+        // دالة التبويبات
+        window.openTab = function(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            // تحديد الزر النشط برمجياً أو من خلال الحدث
+            if(event && event.currentTarget.classList.contains('tab-btn')) {
+                event.currentTarget.classList.add('active');
+            } else {
+                // إذا تم الفتح برمجياً (مثل التعديل)
+                if(tabId === 'tab-add') document.getElementById('tabBtnAdd').classList.add('active');
+            }
+        }
 
         function formatDateAr(dateString) {
             if(!dateString) return '';
             const d = new Date(dateString);
-            if(isNaN(d)) return dateString;
-            const options = { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' };
-            return d.toLocaleDateString('ar-EG', options); 
+            return isNaN(d) ? dateString : d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }); 
         }
 
-        // --- نظام حفظ تسجيل الدخول التلقائي ---
+        function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3000); }
+
+        // --- نظام تسجيل الدخول ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const code = user.email.split('@')[0];
@@ -256,16 +289,29 @@
                     document.getElementById('adminDashboard').style.display = 'block';
                     loadAdminData();
                 } else {
-                    const studentSnap = await getDoc(doc(db, "students", code));
-                    if(!studentSnap.exists()) {
-                        await signOut(auth); 
-                        document.getElementById('loginSection').style.display = 'block';
-                        return;
-                    }
-                    loggedInStudentCode = code;
+                    const qParent = query(collection(db, "students"), where("parentCode", "==", code));
+                    const parentSnap = await getDocs(qParent);
                     document.getElementById('studentDashboard').style.display = 'block';
-                    loadStudentData(code, studentSnap.data().name);
-                    loadChat(code, "studentChatBox", false); 
+
+                    if (!parentSnap.empty) {
+                        document.getElementById('parentSelectorDiv').style.display = 'block';
+                        const select = document.getElementById('parentKidsSelect');
+                        select.innerHTML = '';
+                        let firstKidCode = null, firstKidName = null;
+                        
+                        parentSnap.forEach(docSnap => {
+                            const data = docSnap.data();
+                            if(!firstKidCode) { firstKidCode = data.code; firstKidName = data.name; }
+                            select.innerHTML += `<option value="${data.code}">${data.name}</option>`;
+                        });
+                        select.onchange = (e) => { setupStudentView(e.target.value, e.target.options[e.target.selectedIndex].text); };
+                        setupStudentView(firstKidCode, firstKidName);
+                    } else {
+                        document.getElementById('parentSelectorDiv').style.display = 'none';
+                        const studentSnap = await getDoc(doc(db, "students", code));
+                        if(studentSnap.exists()) setupStudentView(code, studentSnap.data().name);
+                        else handleLogout();
+                    }
                 }
             } else {
                 document.getElementById('loginSection').style.display = 'block';
@@ -275,32 +321,72 @@
         });
 
         document.getElementById('loginBtn').addEventListener('click', async () => {
-            const code = document.getElementById('userCode').value;
-            const pass = document.getElementById('userPass').value;
-            try { await signInWithEmailAndPassword(auth, code + "@ragabweb.com", pass); } 
+            try { await signInWithEmailAndPassword(auth, document.getElementById('userCode').value + "@ragabweb.com", document.getElementById('userPass').value); } 
             catch(e) { document.getElementById('errorMessage').style.display = 'block'; }
         });
 
-        const handleLogout = () => { signOut(auth); };
+        const handleLogout = () => signOut(auth);
         document.getElementById('adminLogoutBtn').addEventListener('click', handleLogout);
         document.getElementById('studentLogoutBtn').addEventListener('click', handleLogout);
 
-        document.getElementById('printReportBtn').addEventListener('click', () => { window.print(); });
+        // --- إضافة / تعديل طالب ---
+        function resetAddForm() {
+            document.querySelectorAll('#tab-add input').forEach(el => el.value = '');
+            document.getElementById('studentCode').disabled = false;
+            document.getElementById('addStudentBtn').textContent = "حفظ بيانات الطالب";
+            document.getElementById('addTabTitle').textContent = "إضافة طالب 📝";
+            document.getElementById('cancelEditStudentBtn').style.display = "none";
+        }
 
-        // إظهار/إخفاء المبالغ المستحقة للطالب
-        document.getElementById('toggleDueBtn').addEventListener('click', () => {
-            const dueDiv = document.getElementById('dueAmountDetails');
-            dueDiv.style.display = dueDiv.style.display === 'none' ? 'block' : 'none';
+        document.getElementById('cancelEditStudentBtn').addEventListener('click', resetAddForm);
+
+        window.editStudentUI = async function(code) {
+            const snap = await getDoc(doc(db, "students", code));
+            if(snap.exists()) {
+                const d = snap.data();
+                document.getElementById('studentName').value = d.name;
+                document.getElementById('studentCode').value = d.code;
+                document.getElementById('studentCode').disabled = true; // نمنع تغيير الكود
+                document.getElementById('parentCode').value = d.parentCode || '';
+                document.getElementById('studentPrice').value = d.price;
+                document.getElementById('studentPass').value = d.password;
+                
+                document.getElementById('addStudentBtn').textContent = "تحديث بيانات الطالب";
+                document.getElementById('addTabTitle').textContent = "تعديل بيانات الطالب ✏️";
+                document.getElementById('cancelEditStudentBtn').style.display = "block";
+                
+                openTab('tab-add');
+            }
+        };
+
+        document.getElementById('addStudentBtn').addEventListener('click', async () => {
+            const name = document.getElementById('studentName').value, code = document.getElementById('studentCode').value, pCode = document.getElementById('parentCode').value, price = document.getElementById('studentPrice').value, pass = document.getElementById('studentPass').value;
+            const isEditing = document.getElementById('studentCode').disabled;
+
+            if(!name || !code || !pass || !price) return alert("أكمل الحقول الأساسية!");
+            
+            try {
+                if(isEditing) {
+                    await updateDoc(doc(db, "students", code), { name: name, parentCode: pCode, price: Number(price), password: pass });
+                    alert("تم تحديث بيانات الطالب بنجاح!");
+                } else {
+                    await createUserWithEmailAndPassword(secondaryAuth, code + "@ragabweb.com", pass);
+                    if(pCode) { try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pass); } catch(e){} }
+                    await signOut(secondaryAuth);
+                    await setDoc(doc(db, "students", code), { name, code, parentCode: pCode, price: Number(price), password: pass });
+                    showMsg('addStudentMsg');
+                }
+                resetAddForm();
+                loadAdminData();
+                if(isEditing) openTab('tab-list');
+            } catch (error) { alert("حدث خطأ."); }
         });
 
-        // --- جلب بيانات الطلاب للمدير ---
+        // --- جلب بيانات الطلاب ---
         async function loadAdminData() {
             const selects = document.querySelectorAll('.student-select');
-            const studentsList = document.getElementById('myStudentsList');
             const dataTableBody = document.getElementById('studentsDataTableBody'); 
-            
             selects.forEach(s => s.innerHTML = '<option value="">اختر الطالب...</option>');
-            studentsList.innerHTML = '';
             dataTableBody.innerHTML = ''; 
 
             const qSnap = await getDocs(collection(db, "students"));
@@ -308,211 +394,237 @@
                 const data = docSnap.data();
                 const optionHTML = `<option value="${data.code}">${data.name} (كود: ${data.code})</option>`;
                 selects.forEach(s => s.innerHTML += optionHTML);
-
-                const btn = document.createElement('button');
-                btn.className = 'student-list-btn';
-                btn.textContent = `👨‍🎓 ${data.name} - (الأساسي: ${data.price})`;
-                btn.onclick = () => showStudentDetails(data.code, data.name);
-                studentsList.appendChild(btn);
-
-                dataTableBody.innerHTML += `<tr><td>${data.name}</td><td>${data.code}</td><td>${data.password}</td><td>${data.price}</td></tr>`;
+                dataTableBody.innerHTML += `<tr>
+                    <td>${data.name}</td><td>${data.code}</td><td>${data.parentCode||'-'}</td><td>${data.password}</td><td>${data.price}</td>
+                    <td><button class="btn-success" style="padding:5px 10px; margin:0;" onclick="editStudentUI('${data.code}')">تعديل</button></td>
+                </tr>`;
             });
         }
 
+        // --- التحضير ---
         document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
-            const code = e.target.value;
-            if(code) {
-                const snap = await getDoc(doc(db, "students", code));
+            if(e.target.value) {
+                const snap = await getDoc(doc(db, "students", e.target.value));
                 if(snap.exists()) document.getElementById('attSessionPrice').value = snap.data().price || 0;
-            } else { document.getElementById('attSessionPrice').value = ''; }
-        });
-
-        // --- عرض السجلات للمدير (بها الأسعار لإدارة العمل) ---
-        async function showStudentDetails(code, name) {
-            currentViewingStudentCode = code;
-            document.getElementById('studentDetailsSection').style.display = 'block';
-            document.getElementById('detailsStudentName').textContent = `سجلات: ${name}`;
-            
-            const activeList = document.getElementById('activeRecordsList');
-            const archivedList = document.getElementById('archivedRecordsList');
-            activeList.innerHTML = 'جاري التحميل...';
-            archivedList.innerHTML = '';
-
-            const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
-            activeList.innerHTML = '';
-            let hasActive = false, hasArchived = false;
-            
-            qSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                const statusColor = data.status === "حاضر" ? "green" : "red";
-                const isPaid = data.isPaid === true;
-                const priceText = (data.status === "حاضر" && data.sessionPrice !== undefined) ? ` | <strong>مبلغ الحصة:</strong> ${data.sessionPrice}` : '';
-                const displayDate = formatDateAr(data.date); 
-                
-                let recordHTML = `
-                    <div class="record-card">
-                        <div class="record-details">
-                            <strong>اليوم والتاريخ:</strong> ${displayDate} <br> 
-                            <strong>الحالة:</strong> <span style="color:${statusColor};">${data.status}</span> ${priceText}
-                            <br>${isPaid ? '<span class="badge-paid">مؤرشفة ومسددة</span>' : (data.status === 'حاضر' ? '<span class="badge-unpaid">غير مسددة</span>' : '')}<br>
-                            <strong>الملاحظات:</strong> ${data.report || '-'}
-                        </div>
-                        <button class="delete-record-btn no-print" onclick="deleteRecord('${docSnap.id}', '${code}', '${name}')">حذف</button>
-                    </div>
-                `;
-
-                if(isPaid) { archivedList.innerHTML += recordHTML; hasArchived = true; } 
-                else { activeList.innerHTML += recordHTML; hasActive = true; }
-            });
-            
-            if(!hasActive) activeList.innerHTML = '<p style="color: #5f6368;">لا توجد حصص حالية.</p>';
-            if(!hasArchived) archivedList.innerHTML = '<p style="color: #5f6368;">لا توجد حصص في الأرشيف.</p>';
-        }
-
-        window.deleteRecord = async function(docId, studentCode, studentName) {
-            if(confirm("تأكيد حذف السجل؟")) {
-                await deleteDoc(doc(db, "attendance", docId));
-                showStudentDetails(studentCode, studentName);
-            }
-        };
-
-        document.getElementById('deleteStudentBtn').addEventListener('click', async () => {
-            if(confirm("هل أنت متأكد من حذف هذا الطالب نهائياً؟")) {
-                await deleteDoc(doc(db, "students", currentViewingStudentCode));
-                alert("تم حذف الطالب بنجاح.");
-                document.getElementById('studentDetailsSection').style.display = 'none';
-                loadAdminData(); 
-            }
-        });
-
-        // --- إضافة طالب وتسجيل حضور ---
-        document.getElementById('addStudentBtn').addEventListener('click', async () => {
-            const name = document.getElementById('studentName').value, code = document.getElementById('studentCode').value, price = document.getElementById('studentPrice').value, pass = document.getElementById('studentPass').value;
-            if(!name || !code || !pass || !price) return alert("أكمل الحقول!");
-            try {
-                await createUserWithEmailAndPassword(secondaryAuth, code + "@ragabweb.com", pass);
-                await signOut(secondaryAuth);
-                await setDoc(doc(db, "students", code), { name, code, price: Number(price), password: pass });
-                showMsg('addStudentMsg');
-                document.querySelectorAll('#studentName, #studentCode, #studentPrice, #studentPass').forEach(el => el.value = '');
-                loadAdminData();
-            } catch (error) { alert("حدث خطأ أو الكود مستخدم."); }
+            } else document.getElementById('attSessionPrice').value = '';
         });
 
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
             const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
             if(!code || !date) return alert("اختر الطالب والتاريخ!");
             await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false, sessionPrice: Number(sessionPrice) || 0 });
-            showMsg('addAttendanceMsg');
-            document.getElementById('attReport').value = '';
+            showMsg('addAttendanceMsg'); document.getElementById('attReport').value = '';
         });
 
-        // --- الحساب الشهري والأرشفة للمدير ---
-        document.getElementById('calcBtn').addEventListener('click', async () => {
-            const code = document.getElementById('calcStudentSelect').value, startDate = document.getElementById('calcStartDate').value, endDate = document.getElementById('calcEndDate').value;
-            if(!code || !startDate || !endDate) return alert("الرجاء اختيار الطالب وتحديد فترة التاريخ من وإلى!");
+        // --- الماليات والسداد والفاتورة المخففة ---
+        document.getElementById('fetchDuesBtn').addEventListener('click', async () => {
+            const code = document.getElementById('calcStudentSelect').value;
+            if(!code) return alert("اختر الطالب أولاً");
             
             const snap = await getDoc(doc(db, "students", code));
-            if (!snap.exists()) return;
-            const defaultPrice = snap.data().price || 0;
-            const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
+            currentStudentNameForInvoice = snap.data().name;
             
-            unpaidDocsToArchive = []; 
+            const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code), where("status", "==", "حاضر"), where("isPaid", "==", false)));
+            
+            unpaidDocsList = [];
             let totalAmount = 0;
+            const listDiv = document.getElementById('unpaidSessionsList');
+            listDiv.innerHTML = '';
             
             qSnap.forEach((d) => {
                 const data = d.data();
-                if (data.status === "حاضر" && data.isPaid !== true) {
-                    if (data.date >= startDate && data.date <= endDate) {
-                        unpaidDocsToArchive.push(d.id);
-                        totalAmount += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice);
-                    }
-                }
+                const price = data.sessionPrice !== undefined ? data.sessionPrice : (snap.data().price || 0);
+                unpaidDocsList.push({ id: d.id, date: data.date, price: price });
+                totalAmount += price;
+                
+                listDiv.innerHTML += `
+                    <div class="record-card" style="padding: 10px;">
+                        <div class="record-details"><strong>التاريخ:</strong> ${formatDateAr(data.date)} | <strong>المبلغ:</strong> ${price}</div>
+                        <button class="btn-success" style="width:auto; padding:5px 10px; margin:0;" onclick="paySingleSession('${d.id}')">تسديد هذه فقط</button>
+                    </div>`;
             });
             
-            const resultDiv = document.getElementById('calcResult');
-            resultDiv.style.display = 'block';
+            document.getElementById('totalDueAmount').textContent = totalAmount;
+            document.getElementById('financialResults').style.display = 'block';
             
-            if (unpaidDocsToArchive.length === 0) {
-                resultDiv.innerHTML = `<p style="color: green; font-weight: bold;">لا توجد حصص غير مسددة في هذه الفترة.</p>`;
+            if(unpaidDocsList.length === 0) {
+                listDiv.innerHTML = '<p style="color:green; font-weight:bold;">لا توجد مبالغ مستحقة على هذا الطالب.</p>';
+                document.getElementById('payAllBtn').style.display = 'none';
+                document.getElementById('printInvoiceBtn').style.display = 'none';
             } else {
-                resultDiv.innerHTML = `
-                    <p>عدد الحصص غير المسددة: <strong>${unpaidDocsToArchive.length}</strong> حصة</p>
-                    <hr style="margin: 10px 0; border-top: 1px solid #cce0ff;">
-                    <p>الإجمالي المطلوب: <strong style="font-size:20px; color:#1a73e8;">${totalAmount}</strong></p>
-                    <button id="archiveBtn" style="background-color: #188038; margin-top: 15px;">تسديد وأرشفة هذه الحصص ✅</button>
-                `;
-                document.getElementById('archiveBtn').addEventListener('click', async () => {
-                    if(confirm("هل تم استلام المبلغ؟ سيتم نقل هذه الحصص إلى الأرشيف.")) {
-                        for (let docId of unpaidDocsToArchive) await updateDoc(doc(db, "attendance", docId), { isPaid: true });
-                        alert("تمت أرشفة الحصص بنجاح!");
-                        document.getElementById('calcBtn').click(); 
-                        if (currentViewingStudentCode === code) showStudentDetails(code, snap.data().name);
-                    }
-                });
+                document.getElementById('payAllBtn').style.display = 'block';
+                document.getElementById('printInvoiceBtn').style.display = 'block';
             }
         });
 
-        // --- واجهة الطالب (بدون عرض الأسعار في السجلات) ---
-        async function loadStudentData(code, studentName) {
-            document.getElementById('studentWelcomeTitle').textContent = `مرحباً بك يا ${studentName} 🎓`;
+        window.paySingleSession = async function(docId) {
+            if(confirm("هل تم استلام مبلغ هذه الحصة؟")) {
+                await updateDoc(doc(db, "attendance", docId), { isPaid: true });
+                document.getElementById('fetchDuesBtn').click(); 
+            }
+        };
+
+        document.getElementById('payAllBtn').addEventListener('click', async () => {
+            if(confirm("هل تم استلام إجمالي المبلغ؟ سيتم أرشفة جميع هذه الحصص.")) {
+                for (let session of unpaidDocsList) { await updateDoc(doc(db, "attendance", session.id), { isPaid: true }); }
+                alert("تم التسديد بنجاح!");
+                document.getElementById('fetchDuesBtn').click();
+            }
+        });
+
+        document.getElementById('printInvoiceBtn').addEventListener('click', () => {
+            const total = document.getElementById('totalDueAmount').textContent;
+            let rows = unpaidDocsList.map(s => `<tr><td style="padding:10px; border:1px solid #ddd;">${formatDateAr(s.date)}</td><td style="padding:10px; border:1px solid #ddd;">${s.price}</td></tr>`).join('');
             
-            const activeList = document.getElementById('studentActiveRecords');
-            const archivedList = document.getElementById('studentArchivedRecords');
-            const dueDiv = document.getElementById('dueAmountDetails');
+            const printWindow = window.open('', '', 'height=600,width=800');
+            printWindow.document.write(`
+                <html dir="rtl"><head><title>تقرير حساب الحصص</title>
+                <style>body{font-family:Tahoma,sans-serif; padding:40px; color:#333;}</style></head><body>
+                <h1 style="color:#1a73e8; text-align:center;">منصة الأستاذ محمد رجب</h1>
+                <h3 style="text-align:center; border-bottom:2px solid #eee; padding-bottom:10px;">تقرير حساب الطالب</h3>
+                <p><strong>اسم الطالب:</strong> ${currentStudentNameForInvoice}</p>
+                <p><strong>تاريخ التقرير:</strong> ${formatDateAr(new Date())}</p>
+                <table style="width:100%; border-collapse:collapse; margin-top:20px; text-align:center;">
+                    <tr style="background:#f0f2f5;">
+                        <th style="padding:10px; border:1px solid #ddd;">تاريخ الحصة</th>
+                        <th style="padding:10px; border:1px solid #ddd;">المبلغ</th>
+                    </tr>
+                    ${rows}
+                    <tr style="background:#e8f0fe; font-weight:bold;">
+                        <td style="padding:10px; border:1px solid #ddd;">الإجمالي</td>
+                        <td style="padding:10px; border:1px solid #ddd; color:#1a73e8; font-size:20px;">${total}</td>
+                    </tr>
+                </table>
+                <p style="text-align:center; margin-top:40px; font-size:12px; color:#888;">مع خالص التحيات والتمنيات بالتوفيق والنجاح الدائم 🌟.</p>
+                <script>window.print(); setTimeout(()=>window.close(), 1000);<\/script>
+                </body></html>
+            `);
+        });
+
+        // --- إدارة السجلات (مع ميزة التعديل اللحظي) ---
+        document.getElementById('manageStudentSelect').addEventListener('change', async (e) => {
+            currentViewingStudentCode = e.target.value;
+            if(!currentViewingStudentCode) { document.getElementById('studentDetailsSection').style.display = 'none'; return; }
+            
+            document.getElementById('studentDetailsSection').style.display = 'block';
+            const activeList = document.getElementById('activeRecordsList');
+            const archivedList = document.getElementById('archivedRecordsList');
+            activeList.innerHTML = 'جاري التحميل...'; archivedList.innerHTML = '';
+            
+            const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", currentViewingStudentCode)));
+            activeList.innerHTML = '';
+            let hasActive = false, hasArchived = false;
+            
+            qSnap.forEach((docSnap) => {
+                const data = docSnap.data();
+                const safeReport = data.report ? data.report.replace(/'/g, "\\'") : '';
+                
+                let html = `<div class="record-card" id="record-${docSnap.id}">
+                    <div class="record-details"><strong>التاريخ:</strong> ${formatDateAr(data.date)} | <strong>الحالة:</strong> ${data.status}<br><strong>السعر:</strong> ${data.sessionPrice||0} <br><strong>التقرير:</strong> ${data.report||'-'}</div>
+                    <div style="display:flex; flex-direction:column; gap:5px;">
+                        <button class="btn-secondary" style="width:auto; padding:5px 10px; margin:0;" onclick="editRecordUI('${docSnap.id}', '${data.date}', '${data.status}', ${data.sessionPrice||0}, '${safeReport}')">تعديل</button>
+                        <button class="btn-danger" style="width:auto; padding:5px 10px; margin:0;" onclick="deleteRecord('${docSnap.id}')">حذف</button>
+                    </div>
+                </div>`;
+                if(data.isPaid) { archivedList.innerHTML += html; hasArchived = true; } else { activeList.innerHTML += html; hasActive = true; }
+            });
+            if(!hasActive) activeList.innerHTML = '<p>لا يوجد.</p>';
+            if(!hasArchived) archivedList.innerHTML = '<p>لا يوجد.</p>';
+        });
+
+        // تحويل واجهة البطاقة إلى نموذج تعديل سريع
+        window.editRecordUI = function(id, date, status, price, report) {
+            const card = document.getElementById(`record-${id}`);
+            card.innerHTML = `
+                <div style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
+                    <label style="font-size:12px; color:#555;">تاريخ الحصة:</label>
+                    <input type="date" id="edit-date-${id}" value="${date}" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <label style="font-size:12px; color:#555;">الحالة:</label>
+                    <select id="edit-status-${id}" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                        <option value="حاضر" ${status==='حاضر'?'selected':''}>حاضر</option>
+                        <option value="غائب" ${status==='غائب'?'selected':''}>غائب</option>
+                    </select>
+                    <label style="font-size:12px; color:#555;">السعر:</label>
+                    <input type="number" id="edit-price-${id}" value="${price}" placeholder="السعر" style="padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <label style="font-size:12px; color:#555;">ملاحظات:</label>
+                    <textarea id="edit-report-${id}" placeholder="الملاحظات" style="padding:8px; border:1px solid #ddd; border-radius:4px;">${report}</textarea>
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <button class="btn-success" onclick="saveRecordEdit('${id}')" style="margin:0; padding:8px;">حفظ التعديل</button>
+                        <button class="btn-danger" onclick="document.getElementById('manageStudentSelect').dispatchEvent(new Event('change'))" style="margin:0; padding:8px;">إلغاء</button>
+                    </div>
+                </div>
+            `;
+        };
+
+        window.saveRecordEdit = async function(id) {
+            const date = document.getElementById(`edit-date-${id}`).value;
+            const status = document.getElementById(`edit-status-${id}`).value;
+            const price = document.getElementById(`edit-price-${id}`).value;
+            const report = document.getElementById(`edit-report-${id}`).value;
+            
+            await updateDoc(doc(db, "attendance", id), {
+                date: date,
+                status: status,
+                sessionPrice: Number(price),
+                report: report
+            });
+            document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); // تحديث القائمة
+        };
+
+        window.deleteRecord = async function(docId) {
+            if(confirm("حذف السجل نهائياً؟")) { await deleteDoc(doc(db, "attendance", docId)); document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); }
+        };
+
+        document.getElementById('deleteStudentBtn').addEventListener('click', async () => {
+            if(confirm("حذف الطالب نهائياً؟")) {
+                await deleteDoc(doc(db, "students", currentViewingStudentCode));
+                document.getElementById('studentDetailsSection').style.display = 'none';
+                loadAdminData(); 
+            }
+        });
+
+        // --- عرض واجهة الطالب / ولي الأمر ---
+        async function setupStudentView(code, name) {
+            loggedInStudentCode = code;
+            document.getElementById('studentWelcomeTitle').textContent = `مرحباً بك يا ${name} 🎓`;
             
             const snap = await getDoc(doc(db, "students", code));
             const defaultPrice = snap.exists() ? (snap.data().price || 0) : 0;
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
-            let unpaidCount = 0;
-            let totalOwed = 0; 
-            let unpaidDatesList = [];
+            const activeList = document.getElementById('studentActiveRecords');
+            const archivedList = document.getElementById('studentArchivedRecords');
+            const dueDiv = document.getElementById('dueAmountDetails');
             
+            let unpaidCount = 0, totalOwed = 0, unpaidDates = [];
             activeList.innerHTML = ''; archivedList.innerHTML = '';
-            let hasActive = false, hasArchived = false;
             
             qSnap.forEach((docSnap) => {
                 const data = docSnap.data();
-                const isPaid = data.isPaid === true;
-                const statusColor = data.status === "حاضر" ? "green" : "red";
-                const displayDate = formatDateAr(data.date);
-                
-                if (data.status === "حاضر" && !isPaid) {
+                if (data.status === "حاضر" && !data.isPaid) {
                     unpaidCount++; 
                     totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice); 
-                    unpaidDatesList.push(displayDate);
+                    unpaidDates.push(formatDateAr(data.date));
                 }
                 
-                // تصميم السجل للطالب: بدون سعر، فقط اليوم والتاريخ، الحالة، والملاحظات
-                let recordHTML = `
-                    <div class="record-card">
-                        <div class="record-details">
-                            <strong>اليوم والتاريخ:</strong> ${displayDate} <br>
-                            <strong>حالة الحضور:</strong> <span style="color:${statusColor}; font-weight: bold;">${data.status}</span><br>
-                            <strong>ملاحظات الحصة:</strong> ${data.report||'لا توجد ملاحظات'}
-                        </div>
-                    </div>`;
-
-                if(isPaid) { archivedList.innerHTML += recordHTML; hasArchived = true; } 
-                else { activeList.innerHTML += recordHTML; hasActive = true; }
+                let html = `<div class="record-card"><div class="record-details"><strong>اليوم والتاريخ:</strong> ${formatDateAr(data.date)}<br><strong>الحالة:</strong> <span style="color:${data.status==='حاضر'?'green':'red'}; font-weight:bold;">${data.status}</span><br><strong>الملاحظات:</strong> ${data.report||'-'}</div></div>`;
+                if(data.isPaid) archivedList.innerHTML += html; else activeList.innerHTML += html;
             });
             
-            if(!hasActive) activeList.innerHTML = '<p>لا توجد سجلات حالية.</p>';
-            if(!hasArchived) archivedList.innerHTML = '<p>لا توجد سجلات سابقة.</p>';
+            if(activeList.innerHTML === '') activeList.innerHTML = '<p>لا يوجد.</p>';
+            if(archivedList.innerHTML === '') archivedList.innerHTML = '<p>لا يوجد.</p>';
             
-            // تحديث قسم المبالغ المستحقة (لا يظهر إلا عند الضغط على الزر)
             if (unpaidCount > 0) {
-                dueDiv.innerHTML = `
-                    <p style="color: #d93025; font-weight: bold; font-size: 18px; margin-bottom: 10px;">الإجمالي المطلوب: ${totalOwed}</p>
-                    <p><strong>عدد الحصص غير المدفوعة:</strong> ${unpaidCount}</p>
-                    <hr style="margin: 10px 0; border-top: 1px solid #ffecb3;">
-                    <p><strong>تواريخ الحصص:</strong><br> <span style="color: #555;">${unpaidDatesList.join('<br>')}</span></p>
-                `;
-            } else {
-                dueDiv.innerHTML = `<p style="color: green; font-weight: bold;">ليس لديك مبالغ مستحقة حالياً. 🌟</p>`;
-            }
+                dueDiv.innerHTML = `<p style="color:#d93025; font-size:18px; font-weight:bold;">المطلوب: ${totalOwed}</p><p>عدد الحصص: ${unpaidCount}</p><hr><p>التواريخ:<br>${unpaidDates.join('<br>')}</p>`;
+            } else { dueDiv.innerHTML = `<p style="color:green; font-weight:bold;">ليس لديك حساب مستحق. 🌟</p>`; }
+            
+            loadChat(code, "studentChatBox", false);
         }
+
+        document.getElementById('toggleDueBtn').addEventListener('click', () => {
+            const d = document.getElementById('dueAmountDetails');
+            d.style.display = d.style.display === 'none' ? 'block' : 'none';
+        });
 
         // --- نظام الدردشة الفورية ---
         let chatUnsubscribe = null;
@@ -521,15 +633,13 @@
             chatBox.innerHTML = 'جاري التحميل...';
             if (chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = onSnapshot(query(collection(db, "messages"), where("studentCode", "==", studentCode)), (snapshot) => {
-                let messages = [];
-                snapshot.forEach(doc => messages.push(doc.data()));
-                messages.sort((a, b) => a.timestamp - b.timestamp);
-                chatBox.innerHTML = messages.length === 0 ? '<p style="text-align:center; color:#888;">لا توجد رسائل سابقة.</p>' : '';
-                messages.forEach(msg => {
-                    const isMyMessage = isAdmin ? (msg.sender === "admin") : (msg.sender !== "admin");
-                    const msgClass = isMyMessage ? "msg-student" : "msg-admin"; 
-                    const timeString = new Date(msg.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                    chatBox.innerHTML += `<div class="message ${msgClass}">${msg.text}<span class="msg-time">${timeString}</span></div>`;
+                let msgs = []; snapshot.forEach(d => msgs.push(d.data()));
+                msgs.sort((a, b) => a.timestamp - b.timestamp);
+                chatBox.innerHTML = msgs.length === 0 ? '<p style="text-align:center; color:#888;">لا توجد رسائل.</p>' : '';
+                msgs.forEach(msg => {
+                    const isMy = isAdmin ? (msg.sender === "admin") : (msg.sender !== "admin");
+                    const time = new Date(msg.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                    chatBox.innerHTML += `<div class="message ${isMy ? "msg-student" : "msg-admin"}">${msg.text}<span class="msg-time">${time}</span></div>`;
                 });
                 chatBox.scrollTop = chatBox.scrollHeight;
             });
@@ -538,21 +648,19 @@
         document.getElementById('chatStudentSelect').addEventListener('change', (e) => {
             currentStudentCodeForChat = e.target.value;
             if(currentStudentCodeForChat) loadChat(currentStudentCodeForChat, "adminChatBox", true);
-            else { document.getElementById('adminChatBox').innerHTML = '<p style="text-align:center; color:#888; margin-top: 50px;">اختر طالباً لبدء الدردشة</p>'; if(chatUnsubscribe) chatUnsubscribe(); }
+            else { document.getElementById('adminChatBox').innerHTML = '<p>اختر طالباً...</p>'; if(chatUnsubscribe) chatUnsubscribe(); }
         });
 
         document.getElementById('adminSendBtn').addEventListener('click', async () => {
-            const input = document.getElementById('adminChatInput');
-            if(!input.value.trim() || !currentStudentCodeForChat) return;
-            await addDoc(collection(db, "messages"), { studentCode: currentStudentCodeForChat, sender: "admin", text: input.value.trim(), timestamp: Date.now() });
-            input.value = '';
+            const i = document.getElementById('adminChatInput');
+            if(!i.value.trim() || !currentStudentCodeForChat) return;
+            await addDoc(collection(db, "messages"), { studentCode: currentStudentCodeForChat, sender: "admin", text: i.value.trim(), timestamp: Date.now() }); i.value = '';
         });
 
         document.getElementById('studentSendBtn').addEventListener('click', async () => {
-            const input = document.getElementById('studentChatInput');
-            if(!input.value.trim() || !loggedInStudentCode) return;
-            await addDoc(collection(db, "messages"), { studentCode: loggedInStudentCode, sender: loggedInStudentCode, text: input.value.trim(), timestamp: Date.now() });
-            input.value = '';
+            const i = document.getElementById('studentChatInput');
+            if(!i.value.trim() || !loggedInStudentCode) return;
+            await addDoc(collection(db, "messages"), { studentCode: loggedInStudentCode, sender: loggedInStudentCode, text: i.value.trim(), timestamp: Date.now() }); i.value = '';
         });
     </script>
 </body>
