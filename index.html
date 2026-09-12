@@ -155,7 +155,7 @@
             <button class="tab-btn active" id="tabBtnAdd" onclick="openTab('tab-add')"><i class="fa-solid fa-user-plus"></i> إدارة الطلاب</button>
             <button class="tab-btn" onclick="openTab('tab-list')"><i class="fa-solid fa-users"></i> قاعدة البيانات</button>
             <button class="tab-btn" onclick="openTab('tab-att')"><i class="fa-solid fa-clipboard-check"></i> التحضير</button>
-            <button class="tab-btn" onclick="openTab('tab-finance')"><i class="fa-solid fa-wallet"></i> الحسابات</button>
+            <button class="tab-btn" onclick="openTab('tab-finance')"><i class="fa-solid fa-wallet"></i> الخزينة والحسابات</button>
             <button class="tab-btn" onclick="openTab('tab-reports')"><i class="fa-solid fa-file-signature"></i> السجلات</button>
             <button class="tab-btn" onclick="openTab('tab-chat')"><i class="fa-solid fa-comments"></i> المراسلات</button>
         </div>
@@ -194,7 +194,7 @@
             <h3><i class="fa-solid fa-database" style="color:var(--primary)"></i> قاعدة بيانات الطلاب ومتابعة النشاط</h3>
             <div class="table-container">
                 <table class="data-table">
-                    <thead><tr><th>الاسم</th><th>كود الطالب</th><th>رقم السر</th><th>كود الولي</th><th>آخر نشاط بالطالب</th><th>السعر</th><th>إجراءات</th></tr></thead>
+                    <thead><tr><th>الاسم</th><th>كود الطالب</th><th>رقم السر</th><th>كود الولي</th><th>آخر نشاط للحساب</th><th>السعر</th><th>إجراءات</th></tr></thead>
                     <tbody id="studentsDataTableBody"></tbody>
                 </table>
             </div>
@@ -216,34 +216,53 @@
             <div id="addAttendanceMsg" class="msg success"><i class="fa-solid fa-circle-check"></i> تم التسجيل!</div>
         </div>
 
-        <!-- الحسابات المالية وتقارير أولياء الأمور -->
+        <!-- الحسابات والخزينة -->
         <div id="tab-finance" class="tab-content dashboard-section">
-            <h3><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary)"></i> المراجعة المالية والتقارير الشاملة</h3>
             
-            <!-- خيارات البحث -->
+            <!-- إحصائيات الخزينة الشاملة -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 style="margin:0;"><i class="fa-solid fa-building-columns" style="color:var(--primary)"></i> إحصائيات الخزينة الشاملة</h3>
+                <button id="refreshGlobalStatsBtn" style="width:auto; padding:8px 15px; font-size:13px; background:#f1f5f9; color:var(--text-main); border:1px solid #e2e8f0;"><i class="fa-solid fa-rotate-right"></i> تحديث الإحصائيات</button>
+            </div>
+            
+            <div style="display:flex; gap:15px; margin-bottom:30px; flex-wrap:wrap;">
+                <div style="flex:1; min-width:200px; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 20px rgba(16,185,129,0.2); position: relative; overflow: hidden;">
+                    <i class="fa-solid fa-sack-dollar" style="position:absolute; left:-10px; bottom:-10px; font-size:100px; opacity:0.15;"></i>
+                    <h4 style="margin:0; border:none; padding:0; color:rgba(255,255,255,0.9); font-size:16px;">الإجمالي المُحصّل (المدفوع)</h4>
+                    <h2 style="margin:10px 0 0 0; font-size:36px; border:none; color:white;">ر.س <span id="globalCollected">0</span></h2>
+                </div>
+                <div style="flex:1; min-width:200px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 25px; border-radius: 16px; box-shadow: 0 8px 20px rgba(239,68,68,0.2); position: relative; overflow: hidden;">
+                    <i class="fa-solid fa-hand-holding-dollar" style="position:absolute; left:-10px; bottom:-10px; font-size:100px; opacity:0.15;"></i>
+                    <h4 style="margin:0; border:none; padding:0; color:rgba(255,255,255,0.9); font-size:16px;">الإجمالي المستحق (الديون)</h4>
+                    <h2 style="margin:10px 0 0 0; font-size:36px; border:none; color:white;">ر.س <span id="globalDue">0</span></h2>
+                </div>
+            </div>
+
+            <hr style="border-top:1px solid #e2e8f0; margin-bottom:25px;">
+
+            <h3><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary)"></i> كشف حساب المستحقات والتقارير</h3>
+            
             <div style="display: flex; gap: 15px; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
                 <div style="flex:1;">
                     <label style="font-weight:bold; font-size:14px;"><i class="fa-solid fa-filter"></i> نوع البحث المستهدف:</label>
-                    <select id="searchTypeSelect" style="margin-top:5px;">
+                    <select id="searchTypeSelect" style="margin-top:5px; background:white;">
                         <option value="student">بحث بحساب طالب فردي</option>
-                        <option value="parent">بحث بحساب ولي أمر (أبناء متعددين)</option>
+                        <option value="parent">بحث مجمع بكود ولي أمر (لجميع أبنائه)</option>
                     </select>
                 </div>
             </div>
 
-            <!-- بحث طالب -->
             <div id="searchStudentDiv" class="input-group">
                 <label>تحديد حساب الطالب للمراجعة</label>
                 <select id="calcStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select>
             </div>
 
-            <!-- بحث ولي أمر -->
             <div id="searchParentDiv" class="input-group" style="display: none;">
                 <label>أدخل كود ولي الأمر للمراجعة الشاملة</label>
                 <input type="text" id="calcParentCodeInput" placeholder="مثال: 5000">
             </div>
 
-            <button id="fetchDuesBtn" class="btn-secondary"><i class="fa-solid fa-magnifying-glass-chart"></i> استخراج الحساب المستحق</button>
+            <button id="fetchDuesBtn" class="btn-secondary"><i class="fa-solid fa-magnifying-glass-chart"></i> استخراج الحساب</button>
             
             <!-- نتيجة الفردي -->
             <div id="financialResults" style="display: none; margin-top: 25px;">
@@ -253,8 +272,8 @@
                         <h4 style="margin: 5px 0 0 0; color: var(--primary); font-size: 28px; border:none; padding:0;">ر.س <span id="totalDueAmount">0</span></h4>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button id="payAllBtn" class="btn-success" style="width: auto;"><i class="fa-solid fa-check-double"></i> تسديد كامل الرصيد</button>
-                        <button id="printInvoiceBtn" class="btn-secondary" style="width: auto;"><i class="fa-solid fa-print"></i> طباعة كشف الحساب</button>
+                        <button id="payAllBtn" class="btn-success" style="width: auto;"><i class="fa-solid fa-check-double"></i> تسديد وأرشفة</button>
+                        <button id="printInvoiceBtn" class="btn-secondary" style="width: auto;"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
                     </div>
                 </div>
                 <h4 style="border:none;"><i class="fa-solid fa-list-check"></i> تفاصيل الحصص المعلقة:</h4>
@@ -268,7 +287,7 @@
                         <span style="color: #065f46; font-size: 14px; font-weight: bold;">إجمالي المستحق على ولي الأمر (جميع الأبناء)</span>
                         <h4 style="margin: 5px 0 0 0; color: #059669; font-size: 28px; border:none; padding:0;">ر.س <span id="parentTotalDueAmount">0</span></h4>
                     </div>
-                    <button id="printParentInvoiceBtn" class="btn-success" style="width: auto;"><i class="fa-solid fa-print"></i> طباعة تقرير ولي الأمر الشامل</button>
+                    <button id="printParentInvoiceBtn" class="btn-success" style="width: auto;"><i class="fa-solid fa-print"></i> طباعة تقرير الولي الشامل</button>
                 </div>
                 <div id="parentKidsDetailsList"></div>
             </div>
@@ -318,7 +337,7 @@
         <div id="parentSelectorDiv" class="dashboard-section no-print" style="display: none; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #bbf7d0;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <h3><i class="fa-solid fa-users-between-lines" style="color: var(--success);"></i> بوابة ولي الأمر لمتابعة الأبناء</h3>
-                <button id="printParentFullReportBtn" class="btn-success" style="width:auto; padding:8px 15px; font-size:13px; margin:0;"><i class="fa-solid fa-print"></i> طباعة تقرير ولي الأمر الشامل (جميع الأبناء)</button>
+                <button id="printParentFullReportBtn" class="btn-success" style="width:auto; padding:8px 15px; font-size:13px; margin:0;"><i class="fa-solid fa-print"></i> طباعة التقرير الشامل (لجميع الأبناء)</button>
             </div>
             <div class="input-group" style="margin-bottom: 0; margin-top:15px;">
                 <label>اختر الابن للمتابعة التفصيلية:</label>
@@ -371,52 +390,48 @@
         let currentStudentCodeForChat = "", loggedInStudentCode = "", currentViewingStudentCode = "", currentParentUserCode = ""; 
         let unpaidDocsList = []; 
         let currentStudentNameForInvoice = "";
-        let parentMultiKidsData = []; // لحفظ بيانات الأبناء عند الاستعلام الشامل
+        let parentMultiKidsData = [];
 
-        // --- محاكي المؤثرات الصوتية النظيفة (Web Audio API) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // --- المؤثرات الصوتية الأنيقة (بدون ملفات خارجية) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if(!audioCtx) { audioCtx = new AudioContext(); } if(audioCtx.state === 'suspended') audioCtx.resume(); }
 
         function playSoftClick() {
             try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                initAudio();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(600, audioCtx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.04);
-                gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.04);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.04);
             } catch(e){}
         }
 
         function playLoginSuccess() {
             try {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
+                initAudio();
                 const now = audioCtx.currentTime;
                 [523.25, 659.25, 783.99].forEach((freq, idx) => {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'sine';
                     osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0.05, now + idx * 0.07);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + idx * 0.07);
-                    osc.stop(now + idx * 0.07 + 0.2);
+                    gain.gain.setValueAtTime(0.08, now + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25);
+                    osc.connect(gain); gain.connect(audioCtx.destination);
+                    osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.25);
                 });
             } catch(e){}
         }
 
-        // إضافة الصوت لجميع الأزرار والتبويبات
+        // تفاعل الأصوات مع الأزرار
         document.addEventListener('click', (e) => {
-            if (e.target.closest('button, .tab-btn, select, input[type="radio"]')) {
-                playSoftClick();
-            }
+            if (e.target.closest('button, .tab-btn, select')) { playSoftClick(); }
         });
 
         // دالة التبويبات
@@ -424,29 +439,22 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            
-            if(event && event.currentTarget.classList.contains('tab-btn')) {
-                event.currentTarget.classList.add('active');
-            } else {
-                if(tabId === 'tab-add') document.getElementById('tabBtnAdd').classList.add('active');
-            }
+            if(event && event.currentTarget.classList.contains('tab-btn')) { event.currentTarget.classList.add('active'); } 
+            else { if(tabId === 'tab-add') document.getElementById('tabBtnAdd').classList.add('active'); }
         }
 
         function formatDateAr(dateString) {
-            if(!dateString) return '';
-            const d = new Date(dateString);
-            return isNaN(d) ? dateString : d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }); 
+            if(!dateString) return ''; const d = new Date(dateString); return isNaN(d) ? dateString : d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }); 
         }
 
         function formatDateTimeAr(isoString) {
             if(!isoString) return 'لم يدخل بعد';
-            const d = new Date(isoString);
-            return isNaN(d) ? 'غير معروف' : d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
+            const d = new Date(isoString); return isNaN(d) ? 'غير معروف' : d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' });
         }
 
         function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3500); }
 
-        // --- نظام تسجيل الدخول ---
+        // --- نظام تسجيل الدخول مع تتبع النشاط ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const code = user.email.split('@')[0];
@@ -456,13 +464,17 @@
                 if (code === "1411") {
                     document.getElementById('adminDashboard').style.display = 'block';
                     loadAdminData();
+                    loadGlobalFinancialStats();
                 } else {
                     currentParentUserCode = code;
                     const qParent = query(collection(db, "students"), where("parentCode", "==", code));
                     const parentSnap = await getDocs(qParent);
                     document.getElementById('studentDashboard').style.display = 'block';
 
+                    const nowISO = new Date().toISOString();
+
                     if (!parentSnap.empty) {
+                        // دخل كولي أمر: تحديث نشاط جميع الأبناء المرتبطين به
                         document.getElementById('parentSelectorDiv').style.display = 'block';
                         const select = document.getElementById('parentKidsSelect');
                         select.innerHTML = '';
@@ -472,14 +484,19 @@
                             const data = docSnap.data();
                             if(!firstKidCode) { firstKidCode = data.code; firstKidName = data.name; }
                             select.innerHTML += `<option value="${data.code}">${data.name}</option>`;
+                            // تحديث آخر نشاط
+                            updateDoc(doc(db, "students", docSnap.id), { lastActive: nowISO }).catch(()=>{});
                         });
-                        select.onchange = (e) => { setupStudentView(e.target.value, e.target.options[e.target.selectedIndex].text); };
-                        setupStudentView(firstKidCode, firstKidName);
+                        select.onchange = (e) => { setupStudentView(e.target.value, e.target.options[e.target.selectedIndex].text, false); };
+                        setupStudentView(firstKidCode, firstKidName, false);
                     } else {
+                        // دخل كطالب
                         document.getElementById('parentSelectorDiv').style.display = 'none';
                         const studentSnap = await getDoc(doc(db, "students", code));
-                        if(studentSnap.exists()) setupStudentView(code, studentSnap.data().name);
-                        else handleLogout();
+                        if(studentSnap.exists()) {
+                            updateDoc(doc(db, "students", code), { lastActive: nowISO }).catch(()=>{});
+                            setupStudentView(code, studentSnap.data().name, false);
+                        } else handleLogout();
                     }
                 }
             } else {
@@ -490,14 +507,11 @@
         });
 
         document.getElementById('loginBtn').addEventListener('click', async () => {
+            initAudio(); // تهيئة الصوت ليعمل بعد تفاعل المستخدم
             const btn = document.getElementById('loginBtn');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الدخول...';
-            try { 
-                await signInWithEmailAndPassword(auth, document.getElementById('userCode').value + "@ragabweb.com", document.getElementById('userPass').value); 
-            } catch(e) { 
-                document.getElementById('errorMessage').style.display = 'block'; 
-                btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول';
-            }
+            try { await signInWithEmailAndPassword(auth, document.getElementById('userCode').value + "@ragabweb.com", document.getElementById('userPass').value); } 
+            catch(e) { document.getElementById('errorMessage').style.display = 'block'; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول'; }
         });
 
         const handleLogout = () => { signOut(auth).then(()=>{ window.location.reload(); }); };
@@ -512,25 +526,20 @@
             document.getElementById('addTabTitle').innerHTML = '<i class="fa-solid fa-pen-to-square" style="color:var(--primary)"></i> إضافة طالب جديد';
             document.getElementById('cancelEditStudentBtn').style.display = "none";
         }
-
         document.getElementById('cancelEditStudentBtn').addEventListener('click', resetAddForm);
 
         window.editStudentUI = async function(code) {
             const snap = await getDoc(doc(db, "students", code));
             if(snap.exists()) {
                 const d = snap.data();
-                document.getElementById('studentName').value = d.name;
-                document.getElementById('studentCode').value = d.code;
-                document.getElementById('studentCode').disabled = true; 
-                document.getElementById('studentPass').value = d.password;
-                document.getElementById('studentPrice').value = d.price;
-                document.getElementById('parentCode').value = d.parentCode || '';
+                document.getElementById('studentName').value = d.name; document.getElementById('studentCode').value = d.code;
+                document.getElementById('studentCode').disabled = true; document.getElementById('studentPass').value = d.password;
+                document.getElementById('studentPrice').value = d.price; document.getElementById('parentCode').value = d.parentCode || '';
                 document.getElementById('parentPass').value = d.parentPass || '';
                 
                 document.getElementById('addStudentBtn').innerHTML = '<i class="fa-solid fa-rotate"></i> تحديث بيانات الطالب';
                 document.getElementById('addTabTitle').innerHTML = '<i class="fa-solid fa-user-pen" style="color:var(--primary)"></i> تعديل بيانات الطالب';
-                document.getElementById('cancelEditStudentBtn').style.display = "block";
-                openTab('tab-add');
+                document.getElementById('cancelEditStudentBtn').style.display = "block"; openTab('tab-add');
             }
         };
 
@@ -550,32 +559,22 @@
 
             try {
                 if(isEditing) {
-                    if(pCode && pPass) {
-                        try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pPass); await signOut(secondaryAuth); } catch(e){}
-                    }
+                    if(pCode && pPass) { try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pPass); await signOut(secondaryAuth); } catch(e){} }
                     await updateDoc(doc(db, "students", code), { name: name, parentCode: pCode, parentPass: pPass, price: Number(price), password: pass });
                     alert("تم تحديث بيانات الطالب بنجاح!");
                 } else {
                     try { await createUserWithEmailAndPassword(secondaryAuth, code + "@ragabweb.com", pass); } catch(err) {}
-                    if(pCode && pPass) { 
-                        try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pPass); } catch(err) {} 
-                    }
+                    if(pCode && pPass) { try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pPass); } catch(err) {} }
                     await signOut(secondaryAuth);
-                    
                     await setDoc(doc(db, "students", code), { name, code, parentCode: pCode, parentPass: pPass, price: Number(price), password: pass, lastActive: null });
                     showMsg('addStudentMsg');
                 }
-                resetAddForm();
-                loadAdminData();
+                resetAddForm(); loadAdminData(); loadGlobalFinancialStats();
                 if(isEditing) openTab('tab-list');
-            } catch (error) { 
-                alert("حدث خطأ أثناء إتمام العملية، يرجى المحاولة مجدداً."); 
-            } finally {
-                btn.innerHTML = originalText;
-            }
+            } catch (error) { alert("حدث خطأ غير متوقع. يرجى المحاولة مجدداً."); } finally { btn.innerHTML = originalText; }
         });
 
-        // --- جلب بيانات الطلاب للمدير وعرض آخر نشاط ---
+        // --- جلب بيانات الطلاب للمدير وعرض النشاط ---
         async function loadAdminData() {
             const selects = document.querySelectorAll('.student-select');
             const dataTableBody = document.getElementById('studentsDataTableBody'); 
@@ -588,21 +587,44 @@
                 const optionHTML = `<option value="${data.code}">${data.name} (كود: ${data.code})</option>`;
                 selects.forEach(s => s.innerHTML += optionHTML);
                 
-                const lastActiveText = formatDateTimeAr(data.lastActive);
-                const activeBadge = data.lastActive ? `<span class="badge badge-active"><i class="fa-solid fa-clock"></i> ${lastActiveText}</span>` : `<span class="badge badge-inactive">لم ينشط بعد</span>`;
+                const activeBadge = data.lastActive ? `<span class="badge badge-active"><i class="fa-regular fa-clock"></i> ${formatDateTimeAr(data.lastActive)}</span>` : `<span class="badge badge-inactive">لم ينشط بعد</span>`;
 
                 dataTableBody.innerHTML += `<tr>
-                    <td><strong>${data.name}</strong></td>
-                    <td><code>${data.code}</code></td>
-                    <td>${data.password}</td>
-                    <td><code>${data.parentCode||'-'}</code></td>
-                    <td>${activeBadge}</td>
-                    <td>${data.price} ر.س</td>
+                    <td><strong>${data.name}</strong></td><td><code>${data.code}</code></td><td>${data.password}</td>
+                    <td><code>${data.parentCode||'-'}</code></td><td>${activeBadge}</td><td>${data.price}</td>
                     <td><button class="btn-secondary" style="padding:6px 12px; margin:0; width:auto; font-size:12px;" onclick="editStudentUI('${data.code}')"><i class="fa-solid fa-pen"></i> تعديل</button></td>
                 </tr>`;
             });
         }
 
+        // --- إحصائيات الخزينة الشاملة ---
+        window.loadGlobalFinancialStats = async function() {
+            try {
+                const btn = document.getElementById('refreshGlobalStatsBtn');
+                if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
+
+                const studentsSnap = await getDocs(collection(db, "students"));
+                const studentPrices = {};
+                studentsSnap.forEach(doc => { studentPrices[doc.data().code] = doc.data().price || 0; });
+
+                const attSnap = await getDocs(query(collection(db, "attendance"), where("status", "==", "حاضر")));
+                let tCollected = 0, tDue = 0;
+
+                attSnap.forEach(doc => {
+                    const data = doc.data();
+                    const price = data.sessionPrice !== undefined ? data.sessionPrice : (studentPrices[data.studentCode] || 0);
+                    if (data.isPaid) tCollected += price; else tDue += price;
+                });
+
+                document.getElementById('globalCollected').textContent = tCollected;
+                document.getElementById('globalDue').textContent = tDue;
+                if(btn) btn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> تحديث الإحصائيات';
+            } catch(e) { console.log(e); }
+        };
+
+        document.getElementById('refreshGlobalStatsBtn').addEventListener('click', loadGlobalFinancialStats);
+
+        // --- التحضير ---
         document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
             if(e.target.value) {
                 const snap = await getDoc(doc(db, "students", e.target.value));
@@ -613,29 +635,24 @@
         document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
             const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
             if(!code || !date) return alert("الرجاء اختيار الطالب والتاريخ!");
-            
             const btn = document.getElementById('addAttendanceBtn');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
             await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false, sessionPrice: Number(sessionPrice) || 0 });
-            showMsg('addAttendanceMsg'); 
-            document.getElementById('attReport').value = '';
+            showMsg('addAttendanceMsg'); document.getElementById('attReport').value = '';
             btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> حفظ السجل';
+            loadGlobalFinancialStats(); // تحديث الخزينة
         });
 
-        // --- نوع البحث في قسم الحسابات ---
+        // --- الكشوفات المالية والحسابات (المدير) ---
         document.getElementById('searchTypeSelect').addEventListener('change', (e) => {
             if(e.target.value === 'student') {
-                document.getElementById('searchStudentDiv').style.display = 'block';
-                document.getElementById('searchParentDiv').style.display = 'none';
+                document.getElementById('searchStudentDiv').style.display = 'block'; document.getElementById('searchParentDiv').style.display = 'none';
             } else {
-                document.getElementById('searchStudentDiv').style.display = 'none';
-                document.getElementById('searchParentDiv').style.display = 'block';
+                document.getElementById('searchStudentDiv').style.display = 'none'; document.getElementById('searchParentDiv').style.display = 'block';
             }
-            document.getElementById('financialResults').style.display = 'none';
-            document.getElementById('parentFinancialResults').style.display = 'none';
+            document.getElementById('financialResults').style.display = 'none'; document.getElementById('parentFinancialResults').style.display = 'none';
         });
 
-        // --- استخراج الحسابات (فردي أو ولي أمر) ---
         document.getElementById('fetchDuesBtn').addEventListener('click', async () => {
             const searchType = document.getElementById('searchTypeSelect').value;
             
@@ -643,80 +660,54 @@
                 const code = document.getElementById('calcStudentSelect').value;
                 if(!code) return alert("اختر الطالب أولاً");
                 
-                const snap = await getDoc(doc(db, "students", code));
-                currentStudentNameForInvoice = snap.data().name;
-                
+                const snap = await getDoc(doc(db, "students", code)); currentStudentNameForInvoice = snap.data().name;
                 const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code), where("status", "==", "حاضر"), where("isPaid", "==", false)));
                 
-                unpaidDocsList = [];
-                let totalAmount = 0;
-                const listDiv = document.getElementById('unpaidSessionsList');
-                listDiv.innerHTML = '';
+                unpaidDocsList = []; let totalAmount = 0;
+                const listDiv = document.getElementById('unpaidSessionsList'); listDiv.innerHTML = '';
                 
                 qSnap.forEach((d) => {
-                    const data = d.data();
-                    const price = data.sessionPrice !== undefined ? data.sessionPrice : (snap.data().price || 0);
-                    unpaidDocsList.push({ id: d.id, date: data.date, price: price, report: data.report || 'لا توجد ملاحظات' });
-                    totalAmount += price;
-                    
-                    listDiv.innerHTML += `
-                        <div class="record-card">
-                            <div class="record-details"><i class="fa-regular fa-calendar" style="color:var(--secondary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)} | <i class="fa-solid fa-tag" style="color:var(--secondary); margin-left:5px;"></i> <strong>المبلغ:</strong> ${price} ر.س</div>
-                            <button class="btn-success" style="width:auto; padding:6px 12px; margin:0; font-size:13px;" onclick="paySingleSession('${d.id}')"><i class="fa-solid fa-check"></i> تسديد</button>
-                        </div>`;
+                    const data = d.data(); const price = data.sessionPrice !== undefined ? data.sessionPrice : (snap.data().price || 0);
+                    unpaidDocsList.push({ id: d.id, date: data.date, price: price, report: data.report || 'لا توجد ملاحظات' }); totalAmount += price;
+                    listDiv.innerHTML += `<div class="record-card"><div class="record-details"><i class="fa-regular fa-calendar" style="color:var(--secondary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)} | <i class="fa-solid fa-tag" style="color:var(--secondary); margin-left:5px;"></i> <strong>المبلغ:</strong> ${price} ر.س</div><button class="btn-success" style="width:auto; padding:6px 12px; margin:0; font-size:13px;" onclick="paySingleSession('${d.id}')"><i class="fa-solid fa-check"></i> تسديد</button></div>`;
                 });
                 
                 document.getElementById('totalDueAmount').textContent = totalAmount;
-                document.getElementById('financialResults').style.display = 'block';
-                document.getElementById('parentFinancialResults').style.display = 'none';
+                document.getElementById('financialResults').style.display = 'block'; document.getElementById('parentFinancialResults').style.display = 'none';
                 
                 if(unpaidDocsList.length === 0) {
                     listDiv.innerHTML = '<p style="color:var(--success); font-weight:bold; padding:15px; background:#ecfdf5; border-radius:8px;"><i class="fa-solid fa-face-smile"></i> رصيد الطالب مسدد بالكامل.</p>';
-                    document.getElementById('payAllBtn').style.display = 'none';
-                    document.getElementById('printInvoiceBtn').style.display = 'none';
-                } else {
-                    document.getElementById('payAllBtn').style.display = 'block';
-                    document.getElementById('printInvoiceBtn').style.display = 'block';
-                }
+                    document.getElementById('payAllBtn').style.display = 'none'; document.getElementById('printInvoiceBtn').style.display = 'none';
+                } else { document.getElementById('payAllBtn').style.display = 'block'; document.getElementById('printInvoiceBtn').style.display = 'block'; }
             } else {
-                // استخراج حساب ولي الأمر الشامل
                 const pCode = document.getElementById('calcParentCodeInput').value.trim();
                 if(!pCode) return alert("أدخل كود ولي الأمر أولاً");
-                
                 loadParentMultiKidsData(pCode, 'parentFinancialResults', 'parentTotalDueAmount', 'parentKidsDetailsList');
             }
         });
 
-        // دالة تجميع بيانات جميع أطفال ولي الأمر
         async function loadParentMultiKidsData(parentCode, resultDivId, totalSpanId, detailsDivId) {
             const kidsSnap = await getDocs(query(collection(db, "students"), where("parentCode", "==", parentCode)));
             if(kidsSnap.empty) return alert("لا يوجد طلاب مرتبطين بكود ولي الأمر هذا!");
 
-            parentMultiKidsData = [];
-            let grandTotal = 0;
-            const detailsDiv = document.getElementById(detailsDivId);
-            detailsDiv.innerHTML = '';
+            parentMultiKidsData = []; let grandTotal = 0;
+            const detailsDiv = document.getElementById(detailsDivId); detailsDiv.innerHTML = '';
 
             for (let kidDoc of kidsSnap.docs) {
                 const kid = kidDoc.data();
                 const attSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", kid.code)));
                 
-                let kidTotalDue = 0;
-                let unpaidSessions = [];
-                let allSessions = [];
-
+                let kidTotalDue = 0, unpaidSessions = [];
                 attSnap.forEach(aDoc => {
                     const a = aDoc.data();
-                    allSessions.push(a);
                     if(a.status === 'حاضر' && !a.isPaid) {
                         const price = a.sessionPrice !== undefined ? a.sessionPrice : (kid.price || 0);
-                        kidTotalDue += price;
-                        unpaidSessions.push({ date: a.date, price: price, report: a.report || '' });
+                        kidTotalDue += price; unpaidSessions.push({ date: a.date, price: price, report: a.report || '' });
                     }
                 });
 
                 grandTotal += kidTotalDue;
-                parentMultiKidsData.push({ name: kid.name, code: kid.code, totalDue: kidTotalDue, unpaidSessions, allSessions });
+                parentMultiKidsData.push({ name: kid.name, code: kid.code, totalDue: kidTotalDue, unpaidSessions });
 
                 let sessionsHtml = unpaidSessions.map(s => `<li style="font-size:13px; margin-bottom:5px;"><strong>${formatDateAr(s.date)}:</strong> ${s.price} ر.س - <span style="color:#64748b;">${s.report}</span></li>`).join('');
                 if(unpaidSessions.length === 0) sessionsHtml = '<li style="font-size:13px; color:#10b981; font-weight:bold;">الحساب مسدد بالكامل ✨</li>';
@@ -724,163 +715,75 @@
                 detailsDiv.innerHTML += `
                     <div style="background:white; border:1px solid #e2e8f0; padding:18px; border-radius:12px; margin-bottom:15px;">
                         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:10px;">
-                            <h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-user-graduate"></i> الابن/ة: ${kid.name} (كود: ${kid.code})</h4>
+                            <h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-user-graduate"></i> الابن/ة: ${kid.name}</h4>
                             <span style="font-weight:bold; color:${kidTotalDue > 0 ? '#ef4444' : '#10b981'}; font-size:16px;">المستحق: ${kidTotalDue} ر.س</span>
-                        </div>
-                        <ul style="padding-right:20px; list-style-type:circle;">${sessionsHtml}</ul>
+                        </div><ul style="padding-right:20px; list-style-type:circle;">${sessionsHtml}</ul>
                     </div>`;
             }
-
             document.getElementById(totalSpanId).textContent = grandTotal;
-            document.getElementById(resultDivId).style.display = 'block';
-            document.getElementById('financialResults').style.display = 'none';
+            document.getElementById(resultDivId).style.display = 'block'; document.getElementById('financialResults').style.display = 'none';
         }
 
         window.paySingleSession = async function(docId) {
             if(confirm("تأكيد تسديد مبلغ هذه الحصة؟")) {
                 await updateDoc(doc(db, "attendance", docId), { isPaid: true });
-                document.getElementById('fetchDuesBtn').click(); 
+                document.getElementById('fetchDuesBtn').click(); loadGlobalFinancialStats();
             }
         };
 
         document.getElementById('payAllBtn').addEventListener('click', async () => {
             if(confirm("هل تود أرشفة وتسديد جميع الحصص المعلقة في هذا الكشف؟")) {
                 for (let session of unpaidDocsList) { await updateDoc(doc(db, "attendance", session.id), { isPaid: true }); }
-                alert("تم التسديد والأرشفة بنجاح!");
-                document.getElementById('fetchDuesBtn').click();
+                alert("تم التسديد والأرشفة بنجاح!"); document.getElementById('fetchDuesBtn').click(); loadGlobalFinancialStats();
             }
         });
 
-        // طباعة كشف حساب فردي
         document.getElementById('printInvoiceBtn').addEventListener('click', () => {
             const total = document.getElementById('totalDueAmount').textContent;
-            let rows = unpaidDocsList.map(s => `<tr>
-                <td style="padding:12px; border:1px solid #e2e8f0;">${formatDateAr(s.date)}</td>
-                <td style="padding:12px; border:1px solid #e2e8f0; color:#475569;">${s.report}</td>
-                <td style="padding:12px; border:1px solid #e2e8f0; font-weight:bold;">${s.price}</td>
-            </tr>`).join('');
-            
-            generatePrintWindow(`كشف حساب الطالب - ${currentStudentNameForInvoice}`, `
-                <h1 style="color:#2563eb; text-align:center; margin-bottom:5px;">منصة الأستاذ محمد رجب</h1>
-                <h3 style="text-align:center; color:#64748b; margin-top:0; border-bottom:2px solid #e2e8f0; padding-bottom:20px;">كشف حساب الحصص الدراسية</h3>
-                
-                <div style="display:flex; justify-content:space-between; margin-top:20px; background:#f1f5f9; padding:15px; border-radius:12px;">
-                    <p style="margin:0;"><strong>اسم الطالب:</strong> ${currentStudentNameForInvoice}</p>
-                    <p style="margin:0;"><strong>تاريخ الكشف:</strong> ${formatDateAr(new Date())}</p>
-                </div>
-
-                <table style="width:100%; border-collapse:collapse; margin-top:25px; text-align:center; background:white;">
-                    <tr style="background:#2563eb; color:white;">
-                        <th style="padding:12px; border:1px solid #2563eb; width:25%;">تاريخ الحصة</th>
-                        <th style="padding:12px; border:1px solid #2563eb; width:50%;">التقرير / الملاحظات</th>
-                        <th style="padding:12px; border:1px solid #2563eb; width:25%;">المبلغ (ر.س)</th>
-                    </tr>
-                    ${rows}
-                    <tr style="background:#eff6ff; font-weight:bold;">
-                        <td colspan="2" style="padding:12px; border:1px solid #bfdbfe; font-size:16px; text-align:left;">الإجمالي المطلوب</td>
-                        <td style="padding:12px; border:1px solid #bfdbfe; color:#2563eb; font-size:20px;">${total} ر.س</td>
-                    </tr>
-                </table>`);
+            let rows = unpaidDocsList.map(s => `<tr><td style="padding:12px; border:1px solid #e2e8f0;">${formatDateAr(s.date)}</td><td style="padding:12px; border:1px solid #e2e8f0; color:#475569;">${s.report}</td><td style="padding:12px; border:1px solid #e2e8f0; font-weight:bold;">${s.price}</td></tr>`).join('');
+            generatePrintWindow(`كشف حساب الطالب - ${currentStudentNameForInvoice}`, `<h1 style="color:#2563eb; text-align:center; margin-bottom:5px;">منصة الأستاذ محمد رجب</h1><h3 style="text-align:center; color:#64748b; margin-top:0; border-bottom:2px solid #e2e8f0; padding-bottom:20px;">كشف حساب الحصص الدراسية</h3><div style="display:flex; justify-content:space-between; margin-top:20px; background:#f1f5f9; padding:15px; border-radius:12px;"><p style="margin:0;"><strong>اسم الطالب:</strong> ${currentStudentNameForInvoice}</p><p style="margin:0;"><strong>تاريخ الكشف:</strong> ${formatDateAr(new Date())}</p></div><table style="width:100%; border-collapse:collapse; margin-top:25px; text-align:center; background:white;"><tr style="background:#2563eb; color:white;"><th style="padding:12px; border:1px solid #2563eb; width:25%;">تاريخ الحصة</th><th style="padding:12px; border:1px solid #2563eb; width:50%;">التقرير / الملاحظات</th><th style="padding:12px; border:1px solid #2563eb; width:25%;">المبلغ (ر.س)</th></tr>${rows}<tr style="background:#eff6ff; font-weight:bold;"><td colspan="2" style="padding:12px; border:1px solid #bfdbfe; font-size:16px; text-align:left;">الإجمالي المطلوب</td><td style="padding:12px; border:1px solid #bfdbfe; color:#2563eb; font-size:20px;">${total} ر.س</td></tr></table>`);
         });
 
-        // طباعة تقرير ولي الأمر الشامل
         function printParentComprehensiveReportAction() {
             if(parentMultiKidsData.length === 0) return alert("لا توجد بيانات للطباعة!");
-            
             let totalAll = 0;
             let kidsBlocks = parentMultiKidsData.map(kid => {
                 totalAll += kid.totalDue;
-                let rows = kid.unpaidSessions.map(s => `<tr>
-                    <td style="padding:10px; border:1px solid #e2e8f0;">${formatDateAr(s.date)}</td>
-                    <td style="padding:10px; border:1px solid #e2e8f0;">${s.report}</td>
-                    <td style="padding:10px; border:1px solid #e2e8f0; font-weight:bold;">${s.price} ر.س</td>
-                </tr>`).join('');
-
-                if(kid.unpaidSessions.length === 0) {
-                    rows = `<tr><td colspan="3" style="padding:10px; color:#10b981; font-weight:bold;">جميع الحصص مسددة بالكامل ✨</td></tr>`;
-                }
-
-                return `
-                    <div style="margin-top:25px; border:1px solid #cbd5e1; border-radius:10px; padding:15px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:10px;">
-                            <h3 style="margin:0; color:#2563eb;">🎓 الطالب/ة: ${kid.name}</h3>
-                            <span style="font-weight:bold;">إجمالي المستحق: ${kid.totalDue} ر.س</span>
-                        </div>
-                        <table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;">
-                            <tr style="background:#e2e8f0;">
-                                <th style="padding:8px; border:1px solid #cbd5e1; width:25%;">التاريخ</th>
-                                <th style="padding:8px; border:1px solid #cbd5e1; width:55%;">التقرير الأكاديمي</th>
-                                <th style="padding:8px; border:1px solid #cbd5e1; width:20%;">المبلغ</th>
-                            </tr>
-                            ${rows}
-                        </table>
-                    </div>`;
+                let rows = kid.unpaidSessions.map(s => `<tr><td style="padding:10px; border:1px solid #e2e8f0;">${formatDateAr(s.date)}</td><td style="padding:10px; border:1px solid #e2e8f0;">${s.report}</td><td style="padding:10px; border:1px solid #e2e8f0; font-weight:bold;">${s.price} ر.س</td></tr>`).join('');
+                if(kid.unpaidSessions.length === 0) rows = `<tr><td colspan="3" style="padding:10px; color:#10b981; font-weight:bold;">جميع الحصص مسددة بالكامل ✨</td></tr>`;
+                return `<div style="margin-top:25px; border:1px solid #cbd5e1; border-radius:10px; padding:15px;"><div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:10px; border-radius:8px; margin-bottom:10px;"><h3 style="margin:0; color:#2563eb;">🎓 الطالب/ة: ${kid.name}</h3><span style="font-weight:bold;">إجمالي المستحق: ${kid.totalDue} ر.س</span></div><table style="width:100%; border-collapse:collapse; text-align:center; font-size:13px;"><tr style="background:#e2e8f0;"><th style="padding:8px; border:1px solid #cbd5e1; width:25%;">التاريخ</th><th style="padding:8px; border:1px solid #cbd5e1; width:55%;">التقرير الأكاديمي</th><th style="padding:8px; border:1px solid #cbd5e1; width:20%;">المبلغ</th></tr>${rows}</table></div>`;
             }).join('');
 
-            generatePrintWindow(`تقرير ولي الأمر الشامل`, `
-                <h1 style="color:#2563eb; text-align:center; margin-bottom:5px;">منصة الأستاذ محمد رجب</h1>
-                <h3 style="text-align:center; color:#64748b; margin-top:0; border-bottom:2px solid #e2e8f0; padding-bottom:15px;">التقرير المالي والأكاديمي الشامل لولي الأمر</h3>
-                
-                <div style="display:flex; justify-content:space-between; margin-top:20px; background:#ecfdf5; padding:15px; border-radius:12px; border:1px solid #a7f3d0;">
-                    <p style="margin:0; font-weight:bold; color:#065f46;">تاريخ التقرير: ${formatDateAr(new Date())}</p>
-                    <p style="margin:0; font-weight:bold; color:#059669; font-size:18px;">المبلغ الإجمالي المتبقي لكل الأبناء: ${totalAll} ر.س</p>
-                </div>
-                ${kidsBlocks}`);
+            generatePrintWindow(`تقرير ولي الأمر الشامل`, `<h1 style="color:#2563eb; text-align:center; margin-bottom:5px;">منصة الأستاذ محمد رجب</h1><h3 style="text-align:center; color:#64748b; margin-top:0; border-bottom:2px solid #e2e8f0; padding-bottom:15px;">التقرير المالي والأكاديمي الشامل لولي الأمر</h3><div style="display:flex; justify-content:space-between; margin-top:20px; background:#ecfdf5; padding:15px; border-radius:12px; border:1px solid #a7f3d0;"><p style="margin:0; font-weight:bold; color:#065f46;">تاريخ التقرير: ${formatDateAr(new Date())}</p><p style="margin:0; font-weight:bold; color:#059669; font-size:18px;">المبلغ الإجمالي المتبقي لكل الأبناء: ${totalAll} ر.س</p></div>${kidsBlocks}`);
         }
 
         document.getElementById('printParentInvoiceBtn').addEventListener('click', printParentComprehensiveReportAction);
-
         document.getElementById('printParentFullReportBtn').addEventListener('click', async () => {
             if(!currentParentUserCode) return;
-            await loadParentMultiKidsData(currentParentUserCode, 'dueAmountDetails', 'totalDueAmount', 'studentActiveRecords');
+            await loadParentMultiKidsData(currentParentUserCode, 'dueAmountDetails', 'totalDueAmount', 'studentActiveRecords'); // استخدام ديفات وهمية فقط لتعبئة المتغير
             printParentComprehensiveReportAction();
         });
 
         function generatePrintWindow(title, content) {
             const printWindow = window.open('', '', 'height=750,width=850');
-            printWindow.document.write(`
-                <html dir="rtl"><head><title>${title}</title>
-                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
-                <style>body{font-family:'Cairo',sans-serif; padding:30px; color:#1e293b; background:#fff;}</style></head><body>
-                <div style="background:white; padding:30px; max-width:800px; margin:0 auto;">
-                    ${content}
-                    <p style="text-align:center; margin-top:40px; font-size:13px; color:#64748b; font-weight:bold;">مع خالص التحيات والتمنيات بدوام التفوق والنجاح 🌟</p>
-                </div>
-                <script>window.print(); setTimeout(()=>window.close(), 1000);<\/script>
-                </body></html>
-            `);
+            printWindow.document.write(`<html dir="rtl"><head><title>${title}</title><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet"><style>body{font-family:'Cairo',sans-serif; padding:30px; color:#1e293b; background:#fff;}</style></head><body><div style="background:white; padding:30px; max-width:800px; margin:0 auto;">${content}<p style="text-align:center; margin-top:40px; font-size:13px; color:#64748b; font-weight:bold;">مع خالص التحيات والتمنيات بدوام التفوق والنجاح 🌟</p></div><script>window.print(); setTimeout(()=>window.close(), 1000);<\/script></body></html>`);
         }
 
-        // --- إدارة السجلات والتعديل اللحظي ---
+        // --- إدارة السجلات والتعديل ---
         document.getElementById('manageStudentSelect').addEventListener('change', async (e) => {
             currentViewingStudentCode = e.target.value;
             if(!currentViewingStudentCode) { document.getElementById('studentDetailsSection').style.display = 'none'; return; }
-            
             document.getElementById('studentDetailsSection').style.display = 'block';
-            const activeList = document.getElementById('activeRecordsList');
-            const archivedList = document.getElementById('archivedRecordsList');
+            const activeList = document.getElementById('activeRecordsList'), archivedList = document.getElementById('archivedRecordsList');
             activeList.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...'; archivedList.innerHTML = '';
             
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", currentViewingStudentCode)));
-            activeList.innerHTML = '';
-            let hasActive = false, hasArchived = false;
+            activeList.innerHTML = ''; let hasActive = false, hasArchived = false;
             
             qSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                const safeReport = data.report ? data.report.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+                const data = docSnap.data(), safeReport = data.report ? data.report.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
                 const statusBadge = data.status === 'حاضر' ? '<span class="badge badge-status-present">حاضر</span>' : '<span class="badge badge-status-absent">غائب</span>';
-                
-                let html = `<div class="record-card" id="record-${docSnap.id}">
-                    <div class="record-details">
-                        <i class="fa-regular fa-calendar-check" style="color:var(--primary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)} <br>
-                        <strong>الحالة:</strong> ${statusBadge} | <strong>السعر:</strong> ${data.sessionPrice||0} ر.س <br>
-                        <strong>ملاحظات:</strong> <span style="color:var(--text-light);">${data.report||'لا يوجد'}</span>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:8px;">
-                        <button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="editRecordUI('${docSnap.id}', '${data.date}', '${data.status}', ${data.sessionPrice||0}, '${safeReport}')"><i class="fa-solid fa-pen"></i> تعديل</button>
-                        <button class="btn-danger" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="deleteRecord('${docSnap.id}')"><i class="fa-solid fa-trash"></i> حذف</button>
-                    </div>
-                </div>`;
+                let html = `<div class="record-card" id="record-${docSnap.id}"><div class="record-details"><i class="fa-regular fa-calendar-check" style="color:var(--primary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)} <br><strong>الحالة:</strong> ${statusBadge} | <strong>السعر:</strong> ${data.sessionPrice||0} ر.س <br><strong>ملاحظات:</strong> <span style="color:var(--text-light);">${data.report||'لا يوجد'}</span></div><div style="display:flex; flex-direction:column; gap:8px;"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="editRecordUI('${docSnap.id}', '${data.date}', '${data.status}', ${data.sessionPrice||0}, '${safeReport}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn-danger" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="deleteRecord('${docSnap.id}')"><i class="fa-solid fa-trash"></i> حذف</button></div></div>`;
                 if(data.isPaid) { archivedList.innerHTML += html; hasArchived = true; } else { activeList.innerHTML += html; hasActive = true; }
             });
             if(!hasActive) activeList.innerHTML = '<p style="color:var(--text-light);"><i class="fa-solid fa-folder-open"></i> لا توجد سجلات حالية.</p>';
@@ -888,75 +791,42 @@
         });
 
         window.editRecordUI = function(id, date, status, price, report) {
-            const card = document.getElementById(`record-${id}`);
-            card.innerHTML = `
-                <div style="width: 100%; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1;">
-                    <h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-pen-to-square"></i> تعديل السجل</h4>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                        <div style="flex:1;"><label style="font-size:12px; font-weight:bold;">التاريخ:</label><input type="date" id="edit-date-${id}" value="${date}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div>
-                        <div style="flex:1;"><label style="font-size:12px; font-weight:bold;">الحالة:</label><select id="edit-status-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"><option value="حاضر" ${status==='حاضر'?'selected':''}>حاضر</option><option value="غائب" ${status==='غائب'?'selected':''}>غائب</option></select></div>
-                        <div style="flex:1;"><label style="font-size:12px; font-weight:bold;">السعر:</label><input type="number" id="edit-price-${id}" value="${price}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div>
-                    </div>
-                    <div><label style="font-size:12px; font-weight:bold;">الملاحظات:</label><textarea id="edit-report-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">${report}</textarea></div>
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <button class="btn-success" onclick="saveRecordEdit('${id}')" style="margin:0; padding:10px;"><i class="fa-solid fa-check"></i> حفظ</button>
-                        <button class="btn-secondary" onclick="document.getElementById('manageStudentSelect').dispatchEvent(new Event('change'))" style="margin:0; padding:10px;"><i class="fa-solid fa-xmark"></i> إلغاء</button>
-                    </div>
-                </div>
-            `;
+            document.getElementById(`record-${id}`).innerHTML = `<div style="width: 100%; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1;"><h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-pen-to-square"></i> تعديل السجل</h4><div style="display:flex; gap:10px; flex-wrap:wrap;"><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">التاريخ:</label><input type="date" id="edit-date-${id}" value="${date}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">الحالة:</label><select id="edit-status-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"><option value="حاضر" ${status==='حاضر'?'selected':''}>حاضر</option><option value="غائب" ${status==='غائب'?'selected':''}>غائب</option></select></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">السعر:</label><input type="number" id="edit-price-${id}" value="${price}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div></div><div><label style="font-size:12px; font-weight:bold;">الملاحظات:</label><textarea id="edit-report-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">${report}</textarea></div><div style="display:flex; gap:10px; margin-top:5px;"><button class="btn-success" onclick="saveRecordEdit('${id}')" style="margin:0; padding:10px;"><i class="fa-solid fa-check"></i> حفظ</button><button class="btn-secondary" onclick="document.getElementById('manageStudentSelect').dispatchEvent(new Event('change'))" style="margin:0; padding:10px;"><i class="fa-solid fa-xmark"></i> إلغاء</button></div></div>`;
         };
 
         window.saveRecordEdit = async function(id) {
-            const date = document.getElementById(`edit-date-${id}`).value, status = document.getElementById(`edit-status-${id}`).value;
-            const price = document.getElementById(`edit-price-${id}`).value, report = document.getElementById(`edit-report-${id}`).value;
-            await updateDoc(doc(db, "attendance", id), { date: date, status: status, sessionPrice: Number(price), report: report });
-            document.getElementById('manageStudentSelect').dispatchEvent(new Event('change'));
+            await updateDoc(doc(db, "attendance", id), { date: document.getElementById(`edit-date-${id}`).value, status: document.getElementById(`edit-status-${id}`).value, sessionPrice: Number(document.getElementById(`edit-price-${id}`).value), report: document.getElementById(`edit-report-${id}`).value });
+            document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); loadGlobalFinancialStats();
         };
 
         window.deleteRecord = async function(docId) {
-            if(confirm("تأكيد الحذف النهائي لهذا السجل؟")) { await deleteDoc(doc(db, "attendance", docId)); document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); }
+            if(confirm("تأكيد الحذف النهائي لهذا السجل؟")) { await deleteDoc(doc(db, "attendance", docId)); document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); loadGlobalFinancialStats(); }
         };
-
         document.getElementById('deleteStudentBtn').addEventListener('click', async () => {
-            if(confirm("تنبيه خطير: هل أنت متأكد من حذف ملف الطالب بجميع سجلاته نهائياً؟")) {
-                await deleteDoc(doc(db, "students", currentViewingStudentCode));
-                document.getElementById('studentDetailsSection').style.display = 'none';
-                loadAdminData(); 
-            }
+            if(confirm("تنبيه خطير: هل أنت متأكد من حذف ملف الطالب بجميع سجلاته نهائياً؟")) { await deleteDoc(doc(db, "students", currentViewingStudentCode)); document.getElementById('studentDetailsSection').style.display = 'none'; loadAdminData(); }
         });
 
-        // --- عرض واجهة الطالب / وتحديث آخر نشاط ---
-        async function setupStudentView(code, name) {
+        // --- عرض واجهة الطالب / ولي الأمر ---
+        async function setupStudentView(code, name, shouldUpdateActivity = false) {
             loggedInStudentCode = code;
             document.getElementById('studentWelcomeTitle').innerHTML = `مرحباً بك يا <span style="color:var(--primary)">${name}</span> 🎓`;
             
-            // تسجيل وتحديث آخر نشاط للطالب تلقائياً في داتابيز
-            try {
-                await updateDoc(doc(db, "students", code), { lastActive: new Date().toISOString() });
-            } catch(e){}
+            // تحديث النشاط إذا كان مسموحاً ولم يحدث في اللوجين الأساسي
+            if(shouldUpdateActivity) { try { await updateDoc(doc(db, "students", code), { lastActive: new Date().toISOString() }); } catch(e){} }
 
             const snap = await getDoc(doc(db, "students", code));
             const defaultPrice = snap.exists() ? (snap.data().price || 0) : 0;
             const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code)));
             
-            const activeList = document.getElementById('studentActiveRecords');
-            const archivedList = document.getElementById('studentArchivedRecords');
-            const dueDiv = document.getElementById('dueAmountDetails');
-            
+            const activeList = document.getElementById('studentActiveRecords'), archivedList = document.getElementById('studentArchivedRecords'), dueDiv = document.getElementById('dueAmountDetails');
             let unpaidCount = 0, totalOwed = 0, unpaidDates = [];
             activeList.innerHTML = ''; archivedList.innerHTML = '';
             
             qSnap.forEach((docSnap) => {
                 const data = docSnap.data();
-                if (data.status === "حاضر" && !data.isPaid) {
-                    unpaidCount++; 
-                    totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice); 
-                    unpaidDates.push(formatDateAr(data.date));
-                }
-                
+                if (data.status === "حاضر" && !data.isPaid) { unpaidCount++; totalOwed += (data.sessionPrice !== undefined ? data.sessionPrice : defaultPrice); unpaidDates.push(formatDateAr(data.date)); }
                 const statusBadge = data.status === 'حاضر' ? '<span class="badge badge-status-present">حاضر</span>' : '<span class="badge badge-status-absent">غائب</span>';
                 let html = `<div class="record-card"><div class="record-details"><i class="fa-regular fa-calendar-check" style="color:var(--primary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)}<br><strong>الحالة:</strong> ${statusBadge}<br><strong>ملاحظات المعلم:</strong> <span style="color:var(--text-light)">${data.report||'لا توجد ملاحظات إضافية'}</span></div></div>`;
-                
                 if(data.isPaid) archivedList.innerHTML += html; else activeList.innerHTML += html;
             });
             
@@ -964,40 +834,24 @@
             if(archivedList.innerHTML === '') archivedList.innerHTML = '<p style="color:var(--text-light);"><i class="fa-solid fa-box-archive"></i> الأرشيف فارغ.</p>';
             
             if (unpaidCount > 0) {
-                dueDiv.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <p style="color:#b45309; font-size:14px; margin:0;">إجمالي الرصيد المطلوب</p>
-                            <p style="color:#d97706; font-size:26px; font-weight:900; margin:0;">ر.س ${totalOwed}</p>
-                        </div>
-                        <div style="background:white; padding:10px 20px; border-radius:10px; text-align:center;">
-                            <span style="display:block; font-size:20px; font-weight:bold; color:var(--text-main)">${unpaidCount}</span>
-                            <span style="font-size:12px; color:var(--text-light)">حصص</span>
-                        </div>
-                    </div>
-                    <hr style="border-top: 1px dashed #fcd34d; margin: 15px 0;">
-                    <p style="font-size:13px; color:#92400e;"><strong><i class="fa-regular fa-calendar"></i> تواريخ الحصص المسجلة:</strong><br><span style="line-height:2;">${unpaidDates.join('<br>')}</span></p>`;
-            } else { 
-                dueDiv.innerHTML = `<div style="text-align:center; padding:10px;"><i class="fa-solid fa-face-smile-beam" style="font-size:30px; color:var(--success); margin-bottom:10px;"></i><p style="color:var(--success); font-weight:bold; font-size:16px; margin:0;">رصيد الحساب مسدد بالكامل، شكراً لكم! 🌟</p></div>`; 
-            }
+                dueDiv.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><div><p style="color:#b45309; font-size:14px; margin:0;">إجمالي الرصيد المطلوب</p><p style="color:#d97706; font-size:26px; font-weight:900; margin:0;">ر.س ${totalOwed}</p></div><div style="background:white; padding:10px 20px; border-radius:10px; text-align:center;"><span style="display:block; font-size:20px; font-weight:bold; color:var(--text-main)">${unpaidCount}</span><span style="font-size:12px; color:var(--text-light)">حصص</span></div></div><hr style="border-top: 1px dashed #fcd34d; margin: 15px 0;"><p style="font-size:13px; color:#92400e;"><strong><i class="fa-regular fa-calendar"></i> تواريخ الحصص المسجلة:</strong><br><span style="line-height:2;">${unpaidDates.join('<br>')}</span></p>`;
+            } else { dueDiv.innerHTML = `<div style="text-align:center; padding:10px;"><i class="fa-solid fa-face-smile-beam" style="font-size:30px; color:var(--success); margin-bottom:10px;"></i><p style="color:var(--success); font-weight:bold; font-size:16px; margin:0;">رصيد الحساب مسدد بالكامل، شكراً لكم! 🌟</p></div>`; }
             
             loadChat(code, "studentChatBox", false);
         }
 
         document.getElementById('toggleDueBtn').addEventListener('click', () => {
-            const d = document.getElementById('dueAmountDetails');
-            d.style.display = d.style.display === 'none' ? 'block' : 'none';
+            const d = document.getElementById('dueAmountDetails'); d.style.display = d.style.display === 'none' ? 'block' : 'none';
         });
 
-        // --- نظام الدردشة الفورية ---
+        // --- نظام الدردشة ---
         let chatUnsubscribe = null;
         function loadChat(studentCode, boxId, isAdmin) {
             const chatBox = document.getElementById(boxId);
             chatBox.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100%;"><i class="fa-solid fa-spinner fa-spin" style="font-size:30px; color:var(--primary)"></i></div>';
             if (chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = onSnapshot(query(collection(db, "messages"), where("studentCode", "==", studentCode)), (snapshot) => {
-                let msgs = []; snapshot.forEach(d => msgs.push(d.data()));
-                msgs.sort((a, b) => a.timestamp - b.timestamp);
+                let msgs = []; snapshot.forEach(d => msgs.push(d.data())); msgs.sort((a, b) => a.timestamp - b.timestamp);
                 chatBox.innerHTML = msgs.length === 0 ? '<div style="text-align:center; color:var(--text-light); margin-top:50px;"><i class="fa-regular fa-comments" style="font-size:40px; margin-bottom:10px;"></i><p>لا توجد رسائل سابقة. ابدأ المحادثة الآن!</p></div>' : '';
                 msgs.forEach(msg => {
                     const isMy = isAdmin ? (msg.sender === "admin") : (msg.sender !== "admin");
@@ -1011,18 +865,15 @@
         document.getElementById('chatStudentSelect').addEventListener('change', (e) => {
             currentStudentCodeForChat = e.target.value;
             if(currentStudentCodeForChat) loadChat(currentStudentCodeForChat, "adminChatBox", true);
-            else { document.getElementById('adminChatBox').innerHTML = '<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#94a3b8; flex-direction:column; gap:10px;"><i class="fa-regular fa-comments" style="font-size:40px;"></i><p>اختر طالباً لبدء المحادثة السحابية</p></div>'; if(chatUnsubscribe) chatUnsubscribe(); }
+            else { document.getElementById('adminChatBox').innerHTML = '<div style="display:flex; height:100%; align-items:center; justify-content:center; color:#94a3b8; flex-direction:column; gap:10px;"><i class="fa-regular fa-comments" style="font-size:40px;"></i><p>اختر طالباً لبدء المحادثة</p></div>'; if(chatUnsubscribe) chatUnsubscribe(); }
         });
 
         document.getElementById('adminSendBtn').addEventListener('click', async () => {
-            const i = document.getElementById('adminChatInput');
-            if(!i.value.trim() || !currentStudentCodeForChat) return;
+            const i = document.getElementById('adminChatInput'); if(!i.value.trim() || !currentStudentCodeForChat) return;
             await addDoc(collection(db, "messages"), { studentCode: currentStudentCodeForChat, sender: "admin", text: i.value.trim(), timestamp: Date.now() }); i.value = '';
         });
-
         document.getElementById('studentSendBtn').addEventListener('click', async () => {
-            const i = document.getElementById('studentChatInput');
-            if(!i.value.trim() || !loggedInStudentCode) return;
+            const i = document.getElementById('studentChatInput'); if(!i.value.trim() || !loggedInStudentCode) return;
             await addDoc(collection(db, "messages"), { studentCode: loggedInStudentCode, sender: loggedInStudentCode, text: i.value.trim(), timestamp: Date.now() }); i.value = '';
         });
     </script>
