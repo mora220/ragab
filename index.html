@@ -85,8 +85,10 @@
         .badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 700; display: inline-block; }
         .badge-active { background: #dcfce7; color: #15803d; }
         .badge-inactive { background: #f1f5f9; color: #94a3b8; }
-        .badge-status-present { color: #10b981; font-weight: bold; }
-        .badge-status-absent { color: #ef4444; font-weight: bold; }
+
+        .msg { margin-top: 15px; text-align: center; font-weight: 600; padding: 12px; border-radius: 8px; display: none; font-size: 14px; }
+        .error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; } 
+        .success { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
 
         @media print { body { background-color: white; padding: 0; color: #000; } .card { box-shadow: none; border: none; max-width: 100%; margin: 0; padding: 0; } .no-print { display: none !important; } .dashboard-section { border: none; background: white; margin-top: 0; padding: 0; box-shadow: none; } }
     </style>
@@ -116,7 +118,8 @@
         <div class="tabs-nav">
             <button class="tab-btn active" id="tabBtnAdd" onclick="openTab('tab-add')"><i class="fa-solid fa-user-plus"></i> إدارة الطلاب</button>
             <button class="tab-btn" onclick="openTab('tab-list')"><i class="fa-solid fa-users"></i> قاعدة البيانات</button>
-            <button class="tab-btn" onclick="openTab('tab-att-weekly')"><i class="fa-solid fa-calendar-week"></i> التحضير الأسبوعي المجمع</button>
+            <button class="tab-btn" onclick="openTab('tab-att')"><i class="fa-solid fa-clipboard-user"></i> التحضير الفردي</button>
+            <button class="tab-btn" onclick="openTab('tab-att-weekly')"><i class="fa-solid fa-calendar-week"></i> التحضير المجمع</button>
             <button class="tab-btn" onclick="openTab('tab-finance')"><i class="fa-solid fa-wallet"></i> الخزينة</button>
             <button class="tab-btn" onclick="openTab('tab-reports')"><i class="fa-solid fa-file-signature"></i> السجلات</button>
             <button class="tab-btn" onclick="openTab('tab-chat')"><i class="fa-solid fa-comments"></i> المراسلات</button>
@@ -157,10 +160,27 @@
             </div>
         </div>
 
+        <!-- التحضير الفردي (عاد كما كان) -->
+        <div id="tab-att" class="tab-content dashboard-section">
+            <h3><i class="fa-solid fa-clipboard-user" style="color:var(--primary)"></i> التحضير الفردي وإرسال الإشعار</h3>
+            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">استخدم هذا القسم لتسجيل حصة مفصلة لطالب واحد مع إمكانية كتابة تقرير الأداء وإرسال إشعار.</p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="input-group" style="flex: 2; min-width: 200px;"><label>اختر الطالب</label><select id="attStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select></div>
+                <div class="input-group" style="flex: 1; min-width: 150px;"><label>سعر هذه الحصة</label><input type="number" id="attSessionPrice" placeholder="السعر التلقائي..."></div>
+            </div>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div class="input-group" style="flex: 1; min-width: 150px;"><label>التاريخ</label><input type="date" id="attDate"></div>
+                <div class="input-group" style="flex: 1; min-width: 150px;"><label>حالة الطالب</label><select id="attStatus"><option value="حاضر">حاضر</option><option value="غائب">غائب</option></select></div>
+            </div>
+            <div class="input-group"><label>التقرير المفصل (الملاحظات)</label><textarea id="attReport" rows="3" placeholder="اكتب تقرير الحصة هنا (يظهر لولي الأمر)..."></textarea></div>
+            <button id="addAttendanceBtn"><i class="fa-solid fa-bell"></i> حفظ السجل الفردي</button>
+            <div id="addAttendanceMsg" class="msg success"><i class="fa-solid fa-circle-check"></i> تم التسجيل بنجاح!</div>
+        </div>
+
         <!-- التحضير الأسبوعي المجمع -->
         <div id="tab-att-weekly" class="tab-content dashboard-section">
-            <h3><i class="fa-solid fa-calendar-day" style="color:var(--primary)"></i> التحضير الشبكي السريع</h3>
-            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">حدد اليوم، ثم اختر الطلاب الحاضرين بنقرة واحدة. الأسعار تُسجل تلقائياً حسب السعر الأساسي لكل طالب.</p>
+            <h3><i class="fa-solid fa-calendar-day" style="color:var(--primary)"></i> التحضير الشبكي السريع (مجمع)</h3>
+            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">حدد اليوم، ثم اختر الطلاب الحاضرين بنقرة واحدة. الأسعار تُسجل تلقائياً حسب السعر الأساسي لكل طالب (بدون تقرير).</p>
             
             <div class="week-header">
                 <button class="week-nav-btn" onclick="changeWeek(7)"><i class="fa-solid fa-chevron-right"></i> الأسبوع التالي</button>
@@ -243,7 +263,7 @@
         <div id="parentSelectorDiv" class="dashboard-section no-print" style="display: none; background: linear-gradient(135deg, #f0fdf4, #dcfce7); border-color: #bbf7d0;">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                 <h3><i class="fa-solid fa-users-between-lines" style="color: var(--success);"></i> بوابة ولي الأمر لمتابعة الأبناء</h3>
-                <button id="printParentFullReportBtn" class="btn-success" style="width:auto; padding:8px 15px; font-size:13px; margin:0;"><i class="fa-solid fa-print"></i> طباعة التقرير الشامل (لجميع الأبناء)</button>
+                <button id="printParentFullReportBtn" class="btn-success" style="width:auto; padding:8px 15px; font-size:13px; margin:0;"><i class="fa-solid fa-print"></i> طباعة التقرير الشامل</button>
             </div>
             <div class="input-group" style="margin-bottom: 0; margin-top:15px;"><label>اختر الابن للمتابعة التفصيلية:</label><select id="parentKidsSelect" style="background: white; border-color: #86efac;"></select></div>
         </div>
@@ -270,7 +290,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = { apiKey: "AIzaSyAlmVnaD2CnBHJqF9ZpZ1EyJp-CvmqdSAQ", authDomain: "ragabweb-c243a.firebaseapp.com", projectId: "ragabweb-c243a" };
         const app = initializeApp(firebaseConfig); const auth = getAuth(app); const db = getFirestore(app);
@@ -278,12 +298,11 @@
 
         let currentStudentCodeForChat = "", loggedInStudentCode = "", currentViewingStudentCode = "", currentParentUserCode = ""; 
         let unpaidDocsList = []; let currentStudentNameForInvoice = ""; let parentMultiKidsData = [];
-        let allStudentsArray = []; // لحفظ بيانات الطلاب للتحضير الأسبوعي
+        let allStudentsArray = []; 
 
-        // --- المتغيرات الخاصة بالتحضير الأسبوعي ---
         let currentWeekStartDate = new Date();
-        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - currentWeekStartDate.getDay()); // البداية دائما من الأحد
-        let weeklySelections = {}; // { "2026-09-14": ["code1", "code2"] }
+        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - currentWeekStartDate.getDay()); 
+        let weeklySelections = {}; 
         let selectedDateForBulk = null;
 
         // --- المؤثرات الصوتية النظيفة ---
@@ -387,27 +406,27 @@
             } catch (error) { alert("حدث خطأ غير متوقع. يرجى المحاولة مجدداً."); } finally { btn.innerHTML = originalText; }
         });
 
-        // --- جلب الإدارة المجمع وتعبئة Array للتحضير الأسبوعي ---
+        // --- جلب الإدارة المجمع ---
         async function loadAdminData() {
             const selects = document.querySelectorAll('.student-select'); const dataTableBody = document.getElementById('studentsDataTableBody'); 
             const qSnap = await getDocs(collection(db, "students"));
             
             let optionsHTML = '<option value="">اختر الطالب...</option>';
             let tableHTML = '';
-            allStudentsArray = []; // تفريغ وتعبئة المصفوفة
+            allStudentsArray = []; 
 
             qSnap.forEach((docSnap) => {
                 const data = docSnap.data();
-                allStudentsArray.push(data); // حفظ بيانات الطالب
+                allStudentsArray.push(data); 
                 optionsHTML += `<option value="${data.code}">${data.name} (كود: ${data.code})</option>`;
                 const activeBadge = data.lastActive ? `<span class="badge badge-active"><i class="fa-regular fa-clock"></i> ${formatDateTimeAr(data.lastActive)}</span>` : `<span class="badge badge-inactive">لم ينشط بعد</span>`;
                 tableHTML += `<tr><td><strong>${data.name}</strong></td><td><code>${data.code}</code></td><td>${data.password}</td><td><code>${data.parentCode||'-'}</code></td><td>${activeBadge}</td><td>${data.price}</td><td><button class="btn-secondary" style="padding:6px 12px; margin:0; width:auto; font-size:12px;" onclick="editStudentUI('${data.code}')"><i class="fa-solid fa-pen"></i> تعديل</button></td></tr>`;
             });
             selects.forEach(s => s.innerHTML = optionsHTML); dataTableBody.innerHTML = tableHTML;
-            if(selectedDateForBulk) renderStudentsForBulk(selectedDateForBulk); // تحديث القائمة إن كانت مفتوحة
+            if(selectedDateForBulk) renderStudentsForBulk(selectedDateForBulk); 
         }
 
-        // --- نظام التحضير الأسبوعي السريع (الجبار) ---
+        // --- نظام التحضير الأسبوعي السريع ---
         window.changeWeek = function(daysOffset) {
             currentWeekStartDate.setDate(currentWeekStartDate.getDate() + daysOffset);
             renderWeeklyCalendar();
@@ -425,48 +444,33 @@
             for (let i = 0; i < 7; i++) {
                 let d = new Date(currentWeekStartDate);
                 d.setDate(d.getDate() + i);
-                
-                // تصحيح مشكلة التوقيت لضمان صحة الـ YYYY-MM-DD
                 const offset = d.getTimezoneOffset();
                 d = new Date(d.getTime() - (offset*60*1000));
                 const dateStr = d.toISOString().split('T')[0]; 
                 
-                if(!weeklySelections[dateStr]) weeklySelections[dateStr] = []; // تهيئة اليوم
+                if(!weeklySelections[dateStr]) weeklySelections[dateStr] = []; 
                 const count = weeklySelections[dateStr].length;
                 const badgeHtml = count > 0 ? `<span class="day-badge" id="badge-${dateStr}">${count} تم تحديده</span>` : `<span class="day-badge" id="badge-${dateStr}" style="display:none;">0</span>`;
 
-                grid.innerHTML += `
-                    <div class="day-card" id="dayCard-${dateStr}" onclick="selectDateForBulk('${dateStr}', '${daysNames[i]} ${d.toLocaleDateString('ar-EG', {month:'numeric', day:'numeric'})}')">
-                        <span class="day-name">${daysNames[i]}</span>
-                        <span class="day-date">${d.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}</span><br>
-                        ${badgeHtml}
-                    </div>
-                `;
+                grid.innerHTML += `<div class="day-card" id="dayCard-${dateStr}" onclick="selectDateForBulk('${dateStr}', '${daysNames[i]} ${d.toLocaleDateString('ar-EG', {month:'numeric', day:'numeric'})}')"><span class="day-name">${daysNames[i]}</span><span class="day-date">${d.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}</span><br>${badgeHtml}</div>`;
             }
-            // إغلاق نافذة التحديد عند تغيير الأسبوع
             document.getElementById('dailySelectionArea').style.display = 'none';
             selectedDateForBulk = null;
         }
 
         window.selectDateForBulk = function(dateStr, displayTitle) {
-            // تفعيل شكل البطاقة
             document.querySelectorAll('.day-card').forEach(el => el.classList.remove('active'));
             document.getElementById(`dayCard-${dateStr}`).classList.add('active');
-            
             selectedDateForBulk = dateStr;
             document.getElementById('selectedDayNameDisplay').innerText = displayTitle;
             document.getElementById('dailySelectionArea').style.display = 'block';
-            
             renderStudentsForBulk(dateStr);
         };
 
         function renderStudentsForBulk(dateStr) {
             const grid = document.getElementById('studentsSelectionGrid');
             grid.innerHTML = '';
-            
-            if(allStudentsArray.length === 0) {
-                grid.innerHTML = '<p style="color:var(--text-light); width:100%;">لا يوجد طلاب مسجلين.</p>'; return;
-            }
+            if(allStudentsArray.length === 0) { grid.innerHTML = '<p style="color:var(--text-light); width:100%;">لا يوجد طلاب مسجلين.</p>'; return; }
 
             let htmlBuffer = '';
             allStudentsArray.forEach(student => {
@@ -481,60 +485,50 @@
             const idx = weeklySelections[dateStr].indexOf(code);
             const chip = document.getElementById(`chip-${code}`);
             
-            if(idx > -1) {
-                weeklySelections[dateStr].splice(idx, 1);
-                chip.classList.remove('selected');
-            } else {
-                weeklySelections[dateStr].push(code);
-                chip.classList.add('selected');
-            }
+            if(idx > -1) { weeklySelections[dateStr].splice(idx, 1); chip.classList.remove('selected'); } 
+            else { weeklySelections[dateStr].push(code); chip.classList.add('selected'); }
             
-            // تحديث الرقم في البطاقة العلوية
             const badge = document.getElementById(`badge-${dateStr}`);
             const count = weeklySelections[dateStr].length;
-            if(count > 0) {
-                badge.style.display = 'inline-block';
-                badge.innerText = `${count} تم تحديده`;
-            } else {
-                badge.style.display = 'none';
-            }
+            if(count > 0) { badge.style.display = 'inline-block'; badge.innerText = `${count} تم تحديده`; } 
+            else { badge.style.display = 'none'; }
         };
 
         document.getElementById('saveWeeklyAttBtn').addEventListener('click', async () => {
-            let totalSaves = 0;
-            for(let date in weeklySelections) { totalSaves += weeklySelections[date].length; }
-            
+            let totalSaves = 0; for(let date in weeklySelections) { totalSaves += weeklySelections[date].length; }
             if(totalSaves === 0) return alert("لم تقم بتحديد أي طالب في هذا الأسبوع!");
             
             if(confirm(`تأكيد حفظ ${totalSaves} تحضير لجميع الأيام المحددة؟`)) {
-                const btn = document.getElementById('saveWeeklyAttBtn');
-                const origHtml = btn.innerHTML;
+                const btn = document.getElementById('saveWeeklyAttBtn'); const origHtml = btn.innerHTML;
                 btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ الشامل...';
-                
                 try {
-                    // استخدام Promise.all لسرعة خرافية وحل مشكلة سفاري
                     const savePromises = [];
                     for(let dateStr in weeklySelections) {
                         for(let code of weeklySelections[dateStr]) {
                             const studentData = allStudentsArray.find(s => s.code === code);
                             const price = studentData ? (studentData.price || 0) : 0;
-                            savePromises.push(addDoc(collection(db, "attendance"), {
-                                studentCode: code, date: dateStr, status: "حاضر", report: "تحضير سريع", isPaid: false, sessionPrice: Number(price)
-                            }));
+                            savePromises.push(addDoc(collection(db, "attendance"), { studentCode: code, date: dateStr, status: "حاضر", report: "تم التحضير الشبكي", isPaid: false, sessionPrice: Number(price) }));
                         }
                     }
                     await Promise.all(savePromises);
-                    
                     alert("تم حفظ جميع التحضيرات بنجاح تام!");
-                    weeklySelections = {}; // تصفير التحديدات
-                    renderWeeklyCalendar(); // إعادة الرسم
-                    loadGlobalFinancialStats(); // تحديث الخزينة
-                } catch(e) {
-                    alert("حدث خطأ أثناء الحفظ المجمع.");
-                } finally {
-                    btn.innerHTML = origHtml;
-                }
+                    weeklySelections = {}; renderWeeklyCalendar(); loadGlobalFinancialStats(); 
+                } catch(e) { alert("حدث خطأ أثناء الحفظ المجمع."); } finally { btn.innerHTML = origHtml; }
             }
+        });
+
+        // --- التحضير الفردي (المفصل) ---
+        document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
+            if(e.target.value) { const snap = await getDoc(doc(db, "students", e.target.value)); if(snap.exists()) document.getElementById('attSessionPrice').value = snap.data().price || 0; } else document.getElementById('attSessionPrice').value = '';
+        });
+
+        document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
+            const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
+            if(!code || !date) return alert("الرجاء اختيار الطالب والتاريخ!");
+            const btn = document.getElementById('addAttendanceBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false, sessionPrice: Number(sessionPrice) || 0 });
+            document.getElementById('addAttendanceMsg').style.display = 'block'; setTimeout(() => document.getElementById('addAttendanceMsg').style.display = 'none', 3000); 
+            document.getElementById('attReport').value = ''; btn.innerHTML = '<i class="fa-solid fa-bell"></i> حفظ السجل الفردي'; loadGlobalFinancialStats();
         });
 
         // --- إحصائيات الخزينة الشاملة ---
