@@ -52,7 +52,7 @@
         
         .device-notif-btn { background: linear-gradient(135deg, #10b981, #059669); font-size:13px; width:auto; padding:10px 15px; display:none; }
         
-        /* تقويم التحضير السريع */
+        /* التقويم اليومي */
         .week-header { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; }
         .week-nav-btn { width: auto; padding: 8px 15px; font-size: 14px; background: white; color: var(--primary); border: 1px solid var(--primary); }
         .week-nav-btn:hover { background: #eff6ff; }
@@ -62,12 +62,6 @@
         .day-card.active { border-color: var(--primary); background: #eff6ff; box-shadow: 0 4px 10px rgba(37,99,235,0.1); transform: translateY(-2px); }
         .day-name { font-weight: 800; color: var(--text-main); font-size: 15px; display: block; margin-bottom: 5px; }
         .day-date { color: var(--text-light); font-size: 12px; }
-        .day-badge { display: inline-block; background: var(--success); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-top: 5px; font-weight: bold; }
-        
-        .students-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 15px; background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1; }
-        .student-chip { background: white; border: 1px solid #cbd5e1; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; font-size: 13px; font-weight: 700; transition: 0.2s; user-select: none; }
-        .student-chip:hover { border-color: var(--primary); }
-        .student-chip.selected { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(37,99,235,0.2); }
         
         .record-card { background: #ffffff; border: 1px solid #e2e8f0; padding: 18px; border-radius: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         .record-details { flex: 1; min-width: 250px; line-height: 1.8; font-size: 14px; color: var(--text-main); }
@@ -85,6 +79,8 @@
         .badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 700; display: inline-block; }
         .badge-active { background: #dcfce7; color: #15803d; }
         .badge-inactive { background: #f1f5f9; color: #94a3b8; }
+        .badge-status-present { color: #10b981; font-weight: bold; }
+        .badge-status-absent { color: #ef4444; font-weight: bold; }
 
         .msg { margin-top: 15px; text-align: center; font-weight: 600; padding: 12px; border-radius: 8px; display: none; font-size: 14px; }
         .error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; } 
@@ -119,13 +115,13 @@
             <button class="tab-btn active" id="tabBtnAdd" onclick="openTab('tab-add')"><i class="fa-solid fa-user-plus"></i> إدارة الطلاب</button>
             <button class="tab-btn" onclick="openTab('tab-list')"><i class="fa-solid fa-users"></i> قاعدة البيانات</button>
             <button class="tab-btn" onclick="openTab('tab-att')"><i class="fa-solid fa-clipboard-user"></i> التحضير الفردي</button>
-            <button class="tab-btn" onclick="openTab('tab-att-weekly')"><i class="fa-solid fa-calendar-week"></i> التحضير المجمع</button>
+            <button class="tab-btn" onclick="openTab('tab-daily-log')"><i class="fa-solid fa-calendar-days"></i> سجل الحصص</button>
             <button class="tab-btn" onclick="openTab('tab-finance')"><i class="fa-solid fa-wallet"></i> الخزينة</button>
-            <button class="tab-btn" onclick="openTab('tab-reports')"><i class="fa-solid fa-file-signature"></i> السجلات</button>
+            <button class="tab-btn" onclick="openTab('tab-reports')"><i class="fa-solid fa-file-signature"></i> سجلات الطلاب</button>
             <button class="tab-btn" onclick="openTab('tab-chat')"><i class="fa-solid fa-comments"></i> المراسلات</button>
         </div>
         
-        <!-- إضافة طالب -->
+        <!-- إدارة الطلاب -->
         <div id="tab-add" class="tab-content active dashboard-section">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 id="addTabTitle"><i class="fa-solid fa-pen-to-square" style="color:var(--primary)"></i> إضافة طالب جديد</h3>
@@ -160,10 +156,9 @@
             </div>
         </div>
 
-        <!-- التحضير الفردي (عاد كما كان) -->
+        <!-- التحضير الفردي -->
         <div id="tab-att" class="tab-content dashboard-section">
             <h3><i class="fa-solid fa-clipboard-user" style="color:var(--primary)"></i> التحضير الفردي وإرسال الإشعار</h3>
-            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">استخدم هذا القسم لتسجيل حصة مفصلة لطالب واحد مع إمكانية كتابة تقرير الأداء وإرسال إشعار.</p>
             <div style="display: flex; gap: 15px; flex-wrap: wrap;">
                 <div class="input-group" style="flex: 2; min-width: 200px;"><label>اختر الطالب</label><select id="attStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select></div>
                 <div class="input-group" style="flex: 1; min-width: 150px;"><label>سعر هذه الحصة</label><input type="number" id="attSessionPrice" placeholder="السعر التلقائي..."></div>
@@ -177,25 +172,23 @@
             <div id="addAttendanceMsg" class="msg success"><i class="fa-solid fa-circle-check"></i> تم التسجيل بنجاح!</div>
         </div>
 
-        <!-- التحضير الأسبوعي المجمع -->
-        <div id="tab-att-weekly" class="tab-content dashboard-section">
-            <h3><i class="fa-solid fa-calendar-day" style="color:var(--primary)"></i> التحضير الشبكي السريع (مجمع)</h3>
-            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">حدد اليوم، ثم اختر الطلاب الحاضرين بنقرة واحدة. الأسعار تُسجل تلقائياً حسب السعر الأساسي لكل طالب (بدون تقرير).</p>
+        <!-- سجل الحصص اليومي المجمع -->
+        <div id="tab-daily-log" class="tab-content dashboard-section">
+            <h3><i class="fa-solid fa-calendar-days" style="color:var(--primary)"></i> سجل الحصص اليومي</h3>
+            <p style="color:var(--text-light); font-size:14px; margin-bottom:20px;">استعرض وعدل الحصص المسجلة لأي يوم من هنا.</p>
             
             <div class="week-header">
-                <button class="week-nav-btn" onclick="changeWeek(7)"><i class="fa-solid fa-chevron-right"></i> الأسبوع التالي</button>
-                <h4 id="weekRangeDisplay" style="margin:0; border:none; color:var(--primary); font-weight:800;"></h4>
-                <button class="week-nav-btn" onclick="changeWeek(-7)">الأسبوع السابق <i class="fa-solid fa-chevron-left"></i></button>
+                <button class="week-nav-btn" onclick="changeWeekLog(7)"><i class="fa-solid fa-chevron-right"></i> الأسبوع التالي</button>
+                <h4 id="logWeekRangeDisplay" style="margin:0; border:none; color:var(--primary); font-weight:800;"></h4>
+                <button class="week-nav-btn" onclick="changeWeekLog(-7)">الأسبوع السابق <i class="fa-solid fa-chevron-left"></i></button>
             </div>
 
-            <div class="week-grid" id="weekDaysGrid"></div>
+            <div class="week-grid" id="logWeekDaysGrid"></div>
 
-            <div id="dailySelectionArea" style="display:none; margin-bottom:20px;">
-                <h4 style="color:var(--text-main);"><i class="fa-solid fa-users"></i> حدد الطلاب الحاضرين ليوم <span id="selectedDayNameDisplay" style="color:var(--primary);"></span></h4>
-                <div class="students-grid" id="studentsSelectionGrid"></div>
+            <div id="dailyLogArea" style="display:none; margin-bottom:20px;">
+                <h4 style="color:var(--text-main); margin-bottom:15px;"><i class="fa-solid fa-clipboard-list"></i> الحصص المسجلة ليوم: <span id="selectedLogDayDisplay" style="color:var(--primary);"></span></h4>
+                <div id="dailyLogRecordsList"></div>
             </div>
-
-            <button id="saveWeeklyAttBtn" class="btn-success"><i class="fa-solid fa-check-double"></i> حفظ جميع التحضيرات المحددة للأسبوع</button>
         </div>
 
         <!-- الخزينة -->
@@ -233,9 +226,9 @@
             </div>
         </div>
 
-        <!-- السجلات -->
+        <!-- السجلات (بالطالب) -->
         <div id="tab-reports" class="tab-content dashboard-section">
-            <h3><i class="fa-solid fa-folder-open" style="color:var(--primary)"></i> أرشيف وسجلات الطلاب</h3>
+            <h3><i class="fa-solid fa-folder-open" style="color:var(--primary)"></i> أرشيف وسجلات الطلاب (حسب الطالب)</h3>
             <div class="input-group"><label>اختر ملف الطالب</label><select id="manageStudentSelect" class="student-select"><option value="">جاري التحميل...</option></select></div>
             <div id="studentDetailsSection" style="display: none; margin-top: 20px;">
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;"><button id="deleteStudentBtn" class="logout-btn" style="float: none; margin:0;"><i class="fa-solid fa-user-xmark"></i> حذف ملف الطالب نهائياً</button></div>
@@ -299,11 +292,12 @@
         let currentStudentCodeForChat = "", loggedInStudentCode = "", currentViewingStudentCode = "", currentParentUserCode = ""; 
         let unpaidDocsList = []; let currentStudentNameForInvoice = ""; let parentMultiKidsData = [];
         let allStudentsArray = []; 
+        let globalSnapshotListeners = []; 
 
-        let currentWeekStartDate = new Date();
-        currentWeekStartDate.setDate(currentWeekStartDate.getDate() - currentWeekStartDate.getDay()); 
-        let weeklySelections = {}; 
-        let selectedDateForBulk = null;
+        // --- سجل الحصص اليومي ---
+        let logWeekStartDate = new Date();
+        logWeekStartDate.setDate(logWeekStartDate.getDate() - logWeekStartDate.getDay()); 
+        let selectedLogDate = null;
 
         // --- المؤثرات الصوتية النظيفة ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -316,23 +310,83 @@
         function playLoginSuccess() {
             try { initAudio(); const now = audioCtx.currentTime; [523.25, 659.25, 783.99].forEach((freq, idx) => { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.value = freq; gain.gain.setValueAtTime(0.08, now + idx * 0.08); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.25); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.25); }); } catch(e){}
         }
+        function playNotificationChime() {
+            try { initAudio(); const now = audioCtx.currentTime; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(880, now); osc.frequency.exponentialRampToValueAtTime(1760, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(now); osc.stop(now + 0.5); } catch(e){}
+        }
 
-        document.addEventListener('click', (e) => { if (e.target.closest('button, .tab-btn, select, .day-card, .student-chip')) { playSoftClick(); } });
+        document.addEventListener('click', (e) => { if (e.target.closest('button, .tab-btn, select, .day-card')) { playSoftClick(); } });
+
+        // --- نظام إشعارات الآيفون ---
+        let swRegistration = null;
+        if ('serviceWorker' in navigator) {
+            const swCode = `self.addEventListener('push', function(e){}); self.addEventListener('notificationclick', function(e){ e.notification.close(); e.waitUntil(clients.matchAll({type: 'window'}).then(clientsArr => { if(clientsArr.length) return clientsArr[0].focus(); return clients.openWindow('/'); })); });`;
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob)).then(reg => { swRegistration = reg; }).catch(()=>{});
+        }
+
+        function triggerLocalNotification(title, body) {
+            playNotificationChime();
+            if (Notification.permission === "granted") {
+                if (swRegistration && swRegistration.showNotification) {
+                    swRegistration.showNotification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/3135/3135810.png', badge: 'https://cdn-icons-png.flaticon.com/512/3135/3135810.png' });
+                } else { new Notification(title, { body: body }); }
+            }
+        }
+
+        function checkNotificationPermissionStatus() {
+            const adminBtn = document.getElementById('adminNotifBtn'); const stdBtn = document.getElementById('studentNotifBtn');
+            if(Notification.permission === "default") { adminBtn.style.display = "inline-block"; stdBtn.style.display = "inline-block"; }
+            else { adminBtn.style.display = "none"; stdBtn.style.display = "none"; }
+        }
+        
+        async function requestNotifPermission() {
+            initAudio(); const p = await Notification.requestPermission();
+            if(p === 'granted') { alert('تم تفعيل الإشعارات بنجاح!'); checkNotificationPermissionStatus(); }
+        }
+        document.getElementById('adminNotifBtn').addEventListener('click', requestNotifPermission);
+        document.getElementById('studentNotifBtn').addEventListener('click', requestNotifPermission);
+
+        function startAdminNotificationListeners() {
+            let initMsgs = true;
+            const unsubMsgs = onSnapshot(collection(db, "messages"), (snapshot) => {
+                if(initMsgs) { initMsgs = false; return; }
+                snapshot.docChanges().forEach(change => { if(change.type === "added") { const msg = change.doc.data(); if(msg.sender !== "admin") triggerLocalNotification("رسالة جديدة من طالب", msg.text); } });
+            });
+            globalSnapshotListeners.push(unsubMsgs);
+        }
+
+        function startStudentNotificationListeners(studentCodesArray) {
+            let initAtt = true, initMsgs = true;
+            const unsubAtt = onSnapshot(collection(db, "attendance"), (snapshot) => {
+                if(initAtt) { initAtt = false; return; }
+                snapshot.docChanges().forEach(change => { if(change.type === "added") { const data = change.doc.data(); if(studentCodesArray.includes(data.studentCode)) { triggerLocalNotification("تحديث أكاديمي جديد 📝", `تم تسجيل تقرير حصة بتاريخ ${formatDateAr(data.date)}`); } } });
+            });
+            const unsubMsgs = onSnapshot(collection(db, "messages"), (snapshot) => {
+                if(initMsgs) { initMsgs = false; return; }
+                snapshot.docChanges().forEach(change => { if(change.type === "added") { const data = change.doc.data(); if(data.sender === "admin" && studentCodesArray.includes(data.studentCode)) { triggerLocalNotification("رسالة من الأستاذ محمد 💬", data.text); } } });
+            });
+            globalSnapshotListeners.push(unsubAtt, unsubMsgs);
+        }
+        function clearGlobalListeners() { globalSnapshotListeners.forEach(unsub => unsub()); globalSnapshotListeners = []; }
 
         window.openTab = function(tabId) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(tabId).classList.add('active'); if(event && event.currentTarget.classList.contains('tab-btn')) { event.currentTarget.classList.add('active'); } else { if(tabId === 'tab-add') document.getElementById('tabBtnAdd').classList.add('active'); } }
         function formatDateAr(dateString) { if(!dateString) return ''; const d = new Date(dateString); return isNaN(d) ? dateString : d.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'numeric', day: 'numeric' }); }
         function formatDateTimeAr(isoString) { if(!isoString) return 'لم يدخل بعد'; const d = new Date(isoString); return isNaN(d) ? 'غير معروف' : d.toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' }); }
+        function showMsg(id) { const e = document.getElementById(id); e.style.display = 'block'; setTimeout(()=> e.style.display = 'none', 3500); }
 
         // --- نظام تسجيل الدخول ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
+                clearGlobalListeners(); 
+                checkNotificationPermissionStatus();
                 const code = user.email.split('@')[0];
                 document.getElementById('loginSection').style.display = 'none';
                 playLoginSuccess();
                 
                 if (code === "1411") {
                     document.getElementById('adminDashboard').style.display = 'block';
-                    loadAdminData(); loadGlobalFinancialStats(); renderWeeklyCalendar();
+                    loadAdminData(); loadGlobalFinancialStats(); renderWeeklyLogCalendar();
+                    startAdminNotificationListeners();
                 } else {
                     currentParentUserCode = code;
                     const qParent = query(collection(db, "students"), where("parentCode", "==", code));
@@ -340,12 +394,14 @@
                     document.getElementById('studentDashboard').style.display = 'block';
                     const nowISO = new Date().toISOString();
                     
+                    let listeningCodes = [];
                     if (!parentSnap.empty) {
                         document.getElementById('parentSelectorDiv').style.display = 'block';
                         const select = document.getElementById('parentKidsSelect'); select.innerHTML = '';
                         let firstKidCode = null, firstKidName = null;
                         parentSnap.forEach(docSnap => {
-                            const data = docSnap.data(); if(!firstKidCode) { firstKidCode = data.code; firstKidName = data.name; }
+                            const data = docSnap.data(); listeningCodes.push(data.code);
+                            if(!firstKidCode) { firstKidCode = data.code; firstKidName = data.name; }
                             select.innerHTML += `<option value="${data.code}">${data.name}</option>`;
                             updateDoc(doc(db, "students", docSnap.id), { lastActive: nowISO }).catch(()=>{});
                         });
@@ -355,10 +411,12 @@
                         document.getElementById('parentSelectorDiv').style.display = 'none';
                         const studentSnap = await getDoc(doc(db, "students", code));
                         if(studentSnap.exists()) {
+                            listeningCodes.push(code);
                             updateDoc(doc(db, "students", code), { lastActive: nowISO }).catch(()=>{});
                             setupStudentView(code, studentSnap.data().name, false);
                         } else handleLogout();
                     }
+                    startStudentNotificationListeners(listeningCodes); 
                 }
             } else {
                 document.getElementById('loginSection').style.display = 'block';
@@ -372,7 +430,7 @@
             catch(e) { document.getElementById('errorMessage').style.display = 'block'; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول'; }
         });
 
-        const handleLogout = () => { signOut(auth).then(()=>{ window.location.reload(); }); };
+        const handleLogout = () => { clearGlobalListeners(); signOut(auth).then(()=>{ window.location.reload(); }); };
         document.getElementById('adminLogoutBtn').addEventListener('click', handleLogout); document.getElementById('studentLogoutBtn').addEventListener('click', handleLogout);
 
         // --- إضافة / تعديل طالب ---
@@ -400,138 +458,79 @@
                     try { await createUserWithEmailAndPassword(secondaryAuth, code + "@ragabweb.com", pass); } catch(err) {}
                     if(pCode && pPass) { try { await createUserWithEmailAndPassword(secondaryAuth, pCode + "@ragabweb.com", pPass); } catch(err) {} }
                     await signOut(secondaryAuth);
-                    await setDoc(doc(db, "students", code), { name, code, parentCode: pCode, parentPass: pPass, price: Number(price), password: pass, lastActive: null }); alert('تم الحفظ بنجاح!');
+                    await setDoc(doc(db, "students", code), { name, code, parentCode: pCode, parentPass: pPass, price: Number(price), password: pass, lastActive: null }); showMsg('addStudentMsg');
                 }
                 resetAddForm(); loadAdminData(); loadGlobalFinancialStats(); if(isEditing) openTab('tab-list');
             } catch (error) { alert("حدث خطأ غير متوقع. يرجى المحاولة مجدداً."); } finally { btn.innerHTML = originalText; }
         });
 
-        // --- جلب الإدارة المجمع ---
+        // --- جلب البيانات ---
         async function loadAdminData() {
             const selects = document.querySelectorAll('.student-select'); const dataTableBody = document.getElementById('studentsDataTableBody'); 
             const qSnap = await getDocs(collection(db, "students"));
-            
-            let optionsHTML = '<option value="">اختر الطالب...</option>';
-            let tableHTML = '';
-            allStudentsArray = []; 
-
+            let optionsHTML = '<option value="">اختر الطالب...</option>'; let tableHTML = ''; allStudentsArray = []; 
             qSnap.forEach((docSnap) => {
-                const data = docSnap.data();
-                allStudentsArray.push(data); 
+                const data = docSnap.data(); allStudentsArray.push(data); 
                 optionsHTML += `<option value="${data.code}">${data.name} (كود: ${data.code})</option>`;
                 const activeBadge = data.lastActive ? `<span class="badge badge-active"><i class="fa-regular fa-clock"></i> ${formatDateTimeAr(data.lastActive)}</span>` : `<span class="badge badge-inactive">لم ينشط بعد</span>`;
                 tableHTML += `<tr><td><strong>${data.name}</strong></td><td><code>${data.code}</code></td><td>${data.password}</td><td><code>${data.parentCode||'-'}</code></td><td>${activeBadge}</td><td>${data.price}</td><td><button class="btn-secondary" style="padding:6px 12px; margin:0; width:auto; font-size:12px;" onclick="editStudentUI('${data.code}')"><i class="fa-solid fa-pen"></i> تعديل</button></td></tr>`;
             });
             selects.forEach(s => s.innerHTML = optionsHTML); dataTableBody.innerHTML = tableHTML;
-            if(selectedDateForBulk) renderStudentsForBulk(selectedDateForBulk); 
         }
 
-        // --- نظام التحضير الأسبوعي السريع ---
-        window.changeWeek = function(daysOffset) {
-            currentWeekStartDate.setDate(currentWeekStartDate.getDate() + daysOffset);
-            renderWeeklyCalendar();
+        // --- سجل الحصص اليومي ---
+        window.changeWeekLog = function(daysOffset) {
+            logWeekStartDate.setDate(logWeekStartDate.getDate() + daysOffset);
+            renderWeeklyLogCalendar();
         };
 
-        function renderWeeklyCalendar() {
-            const grid = document.getElementById('weekDaysGrid');
-            grid.innerHTML = '';
+        window.renderWeeklyLogCalendar = function() {
+            const grid = document.getElementById('logWeekDaysGrid'); grid.innerHTML = '';
             const daysNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-            
-            let weekEndDate = new Date(currentWeekStartDate);
-            weekEndDate.setDate(weekEndDate.getDate() + 6);
-            document.getElementById('weekRangeDisplay').innerText = `${currentWeekStartDate.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})} - ${weekEndDate.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}`;
+            let weekEndDate = new Date(logWeekStartDate); weekEndDate.setDate(weekEndDate.getDate() + 6);
+            document.getElementById('logWeekRangeDisplay').innerText = `${logWeekStartDate.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})} - ${weekEndDate.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}`;
 
             for (let i = 0; i < 7; i++) {
-                let d = new Date(currentWeekStartDate);
-                d.setDate(d.getDate() + i);
-                const offset = d.getTimezoneOffset();
-                d = new Date(d.getTime() - (offset*60*1000));
+                let d = new Date(logWeekStartDate); d.setDate(d.getDate() + i);
+                const offset = d.getTimezoneOffset(); d = new Date(d.getTime() - (offset*60*1000));
                 const dateStr = d.toISOString().split('T')[0]; 
-                
-                if(!weeklySelections[dateStr]) weeklySelections[dateStr] = []; 
-                const count = weeklySelections[dateStr].length;
-                const badgeHtml = count > 0 ? `<span class="day-badge" id="badge-${dateStr}">${count} تم تحديده</span>` : `<span class="day-badge" id="badge-${dateStr}" style="display:none;">0</span>`;
-
-                grid.innerHTML += `<div class="day-card" id="dayCard-${dateStr}" onclick="selectDateForBulk('${dateStr}', '${daysNames[i]} ${d.toLocaleDateString('ar-EG', {month:'numeric', day:'numeric'})}')"><span class="day-name">${daysNames[i]}</span><span class="day-date">${d.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}</span><br>${badgeHtml}</div>`;
+                grid.innerHTML += `<div class="day-card" id="logDayCard-${dateStr}" onclick="selectDateForLog('${dateStr}', '${daysNames[i]} ${d.toLocaleDateString('ar-EG', {month:'numeric', day:'numeric'})}')"><span class="day-name">${daysNames[i]}</span><span class="day-date">${d.toLocaleDateString('ar-EG', {month:'short', day:'numeric'})}</span></div>`;
             }
-            document.getElementById('dailySelectionArea').style.display = 'none';
-            selectedDateForBulk = null;
-        }
-
-        window.selectDateForBulk = function(dateStr, displayTitle) {
-            document.querySelectorAll('.day-card').forEach(el => el.classList.remove('active'));
-            document.getElementById(`dayCard-${dateStr}`).classList.add('active');
-            selectedDateForBulk = dateStr;
-            document.getElementById('selectedDayNameDisplay').innerText = displayTitle;
-            document.getElementById('dailySelectionArea').style.display = 'block';
-            renderStudentsForBulk(dateStr);
+            document.getElementById('dailyLogArea').style.display = 'none'; selectedLogDate = null;
         };
 
-        function renderStudentsForBulk(dateStr) {
-            const grid = document.getElementById('studentsSelectionGrid');
-            grid.innerHTML = '';
-            if(allStudentsArray.length === 0) { grid.innerHTML = '<p style="color:var(--text-light); width:100%;">لا يوجد طلاب مسجلين.</p>'; return; }
-
-            let htmlBuffer = '';
-            allStudentsArray.forEach(student => {
-                const isSelected = weeklySelections[dateStr] && weeklySelections[dateStr].includes(student.code);
-                htmlBuffer += `<div class="student-chip ${isSelected ? 'selected' : ''}" id="chip-${student.code}" onclick="toggleStudentForBulk('${dateStr}', '${student.code}')">${student.name}</div>`;
-            });
-            grid.innerHTML = htmlBuffer;
-        }
-
-        window.toggleStudentForBulk = function(dateStr, code) {
-            if(!weeklySelections[dateStr]) weeklySelections[dateStr] = [];
-            const idx = weeklySelections[dateStr].indexOf(code);
-            const chip = document.getElementById(`chip-${code}`);
-            
-            if(idx > -1) { weeklySelections[dateStr].splice(idx, 1); chip.classList.remove('selected'); } 
-            else { weeklySelections[dateStr].push(code); chip.classList.add('selected'); }
-            
-            const badge = document.getElementById(`badge-${dateStr}`);
-            const count = weeklySelections[dateStr].length;
-            if(count > 0) { badge.style.display = 'inline-block'; badge.innerText = `${count} تم تحديده`; } 
-            else { badge.style.display = 'none'; }
+        window.selectDateForLog = async function(dateStr, displayTitle) {
+            document.querySelectorAll('#logWeekDaysGrid .day-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`logDayCard-${dateStr}`).classList.add('active');
+            selectedLogDate = dateStr; document.getElementById('selectedLogDayDisplay').innerText = displayTitle;
+            document.getElementById('dailyLogArea').style.display = 'block';
+            await fetchDailyLog(dateStr);
         };
 
-        document.getElementById('saveWeeklyAttBtn').addEventListener('click', async () => {
-            let totalSaves = 0; for(let date in weeklySelections) { totalSaves += weeklySelections[date].length; }
-            if(totalSaves === 0) return alert("لم تقم بتحديد أي طالب في هذا الأسبوع!");
-            
-            if(confirm(`تأكيد حفظ ${totalSaves} تحضير لجميع الأيام المحددة؟`)) {
-                const btn = document.getElementById('saveWeeklyAttBtn'); const origHtml = btn.innerHTML;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ الشامل...';
-                try {
-                    const savePromises = [];
-                    for(let dateStr in weeklySelections) {
-                        for(let code of weeklySelections[dateStr]) {
-                            const studentData = allStudentsArray.find(s => s.code === code);
-                            const price = studentData ? (studentData.price || 0) : 0;
-                            savePromises.push(addDoc(collection(db, "attendance"), { studentCode: code, date: dateStr, status: "حاضر", report: "تم التحضير الشبكي", isPaid: false, sessionPrice: Number(price) }));
-                        }
-                    }
-                    await Promise.all(savePromises);
-                    alert("تم حفظ جميع التحضيرات بنجاح تام!");
-                    weeklySelections = {}; renderWeeklyCalendar(); loadGlobalFinancialStats(); 
-                } catch(e) { alert("حدث خطأ أثناء الحفظ المجمع."); } finally { btn.innerHTML = origHtml; }
-            }
-        });
+        window.fetchDailyLog = async function(dateStr) {
+            const listDiv = document.getElementById('dailyLogRecordsList');
+            listDiv.innerHTML = '<div style="text-align:center;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</div>';
+            try {
+                const qSnap = await getDocs(query(collection(db, "attendance"), where("date", "==", dateStr)));
+                if(qSnap.empty) { listDiv.innerHTML = '<p style="color:var(--text-light); text-align:center;">لا توجد حصص مسجلة في هذا اليوم.</p>'; return; }
+                let htmlBuffer = '';
+                qSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const studentData = allStudentsArray.find(s => s.code === data.studentCode) || {name: 'طالب محذوف'};
+                    const statusBadge = data.status === 'حاضر' ? '<span class="badge badge-status-present">حاضر</span>' : '<span class="badge badge-status-absent">غائب</span>';
+                    const paidBadge = data.isPaid ? '<span class="badge badge-active">مسدد</span>' : '<span class="badge badge-inactive">غير مسدد</span>';
+                    const safeReport = data.report ? data.report.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+                    
+                    htmlBuffer += `<div class="record-card" id="record-${docSnap.id}">
+                        <div class="record-details"><h4 style="margin-top:0; margin-bottom:5px; color:var(--primary); border:none;"><i class="fa-solid fa-user-graduate"></i> ${studentData.name}</h4><strong>الحالة:</strong> ${statusBadge} | <strong>السعر:</strong> ${data.sessionPrice||0} ر.س | ${paidBadge} <br><strong>ملاحظات:</strong> <span style="color:var(--text-light);">${data.report||'لا يوجد'}</span></div>
+                        <div style="display:flex; flex-direction:column; gap:8px;"><button class="btn-secondary" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="editRecordUI('${docSnap.id}', '${data.date}', '${data.status}', ${data.sessionPrice||0}, '${safeReport}')"><i class="fa-solid fa-pen"></i> تعديل</button><button class="btn-danger" style="width:auto; padding:6px 12px; margin:0; font-size:12px;" onclick="deleteRecord('${docSnap.id}')"><i class="fa-solid fa-trash"></i> حذف</button></div>
+                    </div>`;
+                });
+                listDiv.innerHTML = htmlBuffer;
+            } catch(e) { listDiv.innerHTML = '<p style="color:var(--danger); text-align:center;">حدث خطأ أثناء جلب البيانات.</p>'; }
+        };
 
-        // --- التحضير الفردي (المفصل) ---
-        document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
-            if(e.target.value) { const snap = await getDoc(doc(db, "students", e.target.value)); if(snap.exists()) document.getElementById('attSessionPrice').value = snap.data().price || 0; } else document.getElementById('attSessionPrice').value = '';
-        });
-
-        document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
-            const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
-            if(!code || !date) return alert("الرجاء اختيار الطالب والتاريخ!");
-            const btn = document.getElementById('addAttendanceBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
-            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false, sessionPrice: Number(sessionPrice) || 0 });
-            document.getElementById('addAttendanceMsg').style.display = 'block'; setTimeout(() => document.getElementById('addAttendanceMsg').style.display = 'none', 3000); 
-            document.getElementById('attReport').value = ''; btn.innerHTML = '<i class="fa-solid fa-bell"></i> حفظ السجل الفردي'; loadGlobalFinancialStats();
-        });
-
-        // --- إحصائيات الخزينة الشاملة ---
+        // --- إحصائيات الخزينة ---
         window.loadGlobalFinancialStats = async function() {
             try {
                 const btn = document.getElementById('refreshGlobalStatsBtn'); if(btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التحديث...';
@@ -545,6 +544,19 @@
         };
         document.getElementById('refreshGlobalStatsBtn').addEventListener('click', loadGlobalFinancialStats);
 
+        // --- التحضير الفردي ---
+        document.getElementById('attStudentSelect').addEventListener('change', async (e) => {
+            if(e.target.value) { const snap = await getDoc(doc(db, "students", e.target.value)); if(snap.exists()) document.getElementById('attSessionPrice').value = snap.data().price || 0; } else document.getElementById('attSessionPrice').value = '';
+        });
+
+        document.getElementById('addAttendanceBtn').addEventListener('click', async () => {
+            const code = document.getElementById('attStudentSelect').value, date = document.getElementById('attDate').value, status = document.getElementById('attStatus').value, report = document.getElementById('attReport').value, sessionPrice = document.getElementById('attSessionPrice').value;
+            if(!code || !date) return alert("الرجاء اختيار الطالب والتاريخ!");
+            const btn = document.getElementById('addAttendanceBtn'); btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+            await addDoc(collection(db, "attendance"), { studentCode: code, date, status, report, isPaid: false, sessionPrice: Number(sessionPrice) || 0 });
+            showMsg('addAttendanceMsg'); document.getElementById('attReport').value = ''; btn.innerHTML = '<i class="fa-solid fa-bell"></i> حفظ السجل الفردي'; loadGlobalFinancialStats();
+        });
+
         // --- الكشوفات المالية والحسابات (المدير) ---
         document.getElementById('searchTypeSelect').addEventListener('change', (e) => {
             if(e.target.value === 'student') { document.getElementById('searchStudentDiv').style.display = 'block'; document.getElementById('searchParentDiv').style.display = 'none'; } else { document.getElementById('searchStudentDiv').style.display = 'none'; document.getElementById('searchParentDiv').style.display = 'block'; }
@@ -557,8 +569,7 @@
                 const code = document.getElementById('calcStudentSelect').value; if(!code) return alert("اختر الطالب أولاً");
                 const snap = await getDoc(doc(db, "students", code)); currentStudentNameForInvoice = snap.data().name;
                 const qSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", code), where("status", "==", "حاضر"), where("isPaid", "==", false)));
-                unpaidDocsList = []; let totalAmount = 0; const listDiv = document.getElementById('unpaidSessionsList'); 
-                let htmlBuffer = '';
+                unpaidDocsList = []; let totalAmount = 0; const listDiv = document.getElementById('unpaidSessionsList'); let htmlBuffer = '';
                 qSnap.forEach((d) => { const data = d.data(); const price = data.sessionPrice !== undefined ? data.sessionPrice : (snap.data().price || 0); unpaidDocsList.push({ id: d.id, date: data.date, price: price, report: data.report || 'لا توجد ملاحظات' }); totalAmount += price; htmlBuffer += `<div class="record-card"><div class="record-details"><i class="fa-regular fa-calendar" style="color:var(--secondary); margin-left:5px;"></i> <strong>التاريخ:</strong> ${formatDateAr(data.date)} | <i class="fa-solid fa-tag" style="color:var(--secondary); margin-left:5px;"></i> <strong>المبلغ:</strong> ${price} ر.س</div><button class="btn-success" style="width:auto; padding:6px 12px; margin:0; font-size:13px;" onclick="paySingleSession('${d.id}')"><i class="fa-solid fa-check"></i> تسديد</button></div>`; });
                 listDiv.innerHTML = htmlBuffer; document.getElementById('totalDueAmount').textContent = totalAmount; document.getElementById('financialResults').style.display = 'block'; document.getElementById('parentFinancialResults').style.display = 'none';
                 if(unpaidDocsList.length === 0) { listDiv.innerHTML = '<p style="color:var(--success); font-weight:bold; padding:15px; background:#ecfdf5; border-radius:8px;"><i class="fa-solid fa-face-smile"></i> رصيد الطالب مسدد بالكامل.</p>'; document.getElementById('payAllBtn').style.display = 'none'; document.getElementById('printInvoiceBtn').style.display = 'none'; } else { document.getElementById('payAllBtn').style.display = 'block'; document.getElementById('printInvoiceBtn').style.display = 'block'; }
@@ -568,8 +579,7 @@
         async function loadParentMultiKidsData(parentCode, resultDivId, totalSpanId, detailsDivId) {
             const kidsSnap = await getDocs(query(collection(db, "students"), where("parentCode", "==", parentCode)));
             if(kidsSnap.empty) return alert("لا يوجد طلاب مرتبطين بكود ولي الأمر هذا!");
-            parentMultiKidsData = []; let grandTotal = 0; const detailsDiv = document.getElementById(detailsDivId); 
-            let htmlBuffer = '';
+            parentMultiKidsData = []; let grandTotal = 0; const detailsDiv = document.getElementById(detailsDivId); let htmlBuffer = '';
             for (let kidDoc of kidsSnap.docs) {
                 const kid = kidDoc.data(); const attSnap = await getDocs(query(collection(db, "attendance"), where("studentCode", "==", kid.code)));
                 let kidTotalDue = 0, unpaidSessions = [];
@@ -626,9 +636,28 @@
             archivedList.innerHTML = archivedHTML || '<p style="color:var(--text-light);"><i class="fa-solid fa-folder-open"></i> لا توجد سجلات مؤرشفة.</p>';
         });
 
-        window.editRecordUI = function(id, date, status, price, report) { document.getElementById(`record-${id}`).innerHTML = `<div style="width: 100%; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1;"><h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-pen-to-square"></i> تعديل السجل</h4><div style="display:flex; gap:10px; flex-wrap:wrap;"><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">التاريخ:</label><input type="date" id="edit-date-${id}" value="${date}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">الحالة:</label><select id="edit-status-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"><option value="حاضر" ${status==='حاضر'?'selected':''}>حاضر</option><option value="غائب" ${status==='غائب'?'selected':''}>غائب</option></select></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">السعر:</label><input type="number" id="edit-price-${id}" value="${price}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div></div><div><label style="font-size:12px; font-weight:bold;">الملاحظات:</label><textarea id="edit-report-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">${report}</textarea></div><div style="display:flex; gap:10px; margin-top:5px;"><button class="btn-success" onclick="saveRecordEdit('${id}')" style="margin:0; padding:10px;"><i class="fa-solid fa-check"></i> حفظ</button><button class="btn-secondary" onclick="document.getElementById('manageStudentSelect').dispatchEvent(new Event('change'))" style="margin:0; padding:10px;"><i class="fa-solid fa-xmark"></i> إلغاء</button></div></div>`; };
-        window.saveRecordEdit = async function(id) { await updateDoc(doc(db, "attendance", id), { date: document.getElementById(`edit-date-${id}`).value, status: document.getElementById(`edit-status-${id}`).value, sessionPrice: Number(document.getElementById(`edit-price-${id}`).value), report: document.getElementById(`edit-report-${id}`).value }); document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); loadGlobalFinancialStats(); };
-        window.deleteRecord = async function(docId) { if(confirm("تأكيد الحذف النهائي لهذا السجل؟")) { await deleteDoc(doc(db, "attendance", docId)); document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); loadGlobalFinancialStats(); } };
+        window.editRecordUI = function(id, date, status, price, report) { document.getElementById(`record-${id}`).innerHTML = `<div style="width: 100%; display: flex; flex-direction: column; gap: 12px; background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px dashed #cbd5e1;"><h4 style="margin:0; border:none; color:var(--primary);"><i class="fa-solid fa-pen-to-square"></i> تعديل السجل</h4><div style="display:flex; gap:10px; flex-wrap:wrap;"><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">التاريخ:</label><input type="date" id="edit-date-${id}" value="${date}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">الحالة:</label><select id="edit-status-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"><option value="حاضر" ${status==='حاضر'?'selected':''}>حاضر</option><option value="غائب" ${status==='غائب'?'selected':''}>غائب</option></select></div><div style="flex:1;"><label style="font-size:12px; font-weight:bold;">السعر:</label><input type="number" id="edit-price-${id}" value="${price}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;"></div></div><div><label style="font-size:12px; font-weight:bold;">الملاحظات:</label><textarea id="edit-report-${id}" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:6px;">${report}</textarea></div><div style="display:flex; gap:10px; margin-top:5px;"><button class="btn-success" onclick="saveRecordEdit('${id}')" style="margin:0; padding:10px;"><i class="fa-solid fa-check"></i> حفظ</button><button class="btn-secondary" onclick="cancelEditRecord()" style="margin:0; padding:10px;"><i class="fa-solid fa-xmark"></i> إلغاء</button></div></div>`; };
+        
+        window.cancelEditRecord = function() {
+            if(document.getElementById('tab-reports').classList.contains('active')) { document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); } 
+            else if(document.getElementById('tab-daily-log').classList.contains('active')) { fetchDailyLog(selectedLogDate); }
+        };
+
+        window.saveRecordEdit = async function(id) { 
+            await updateDoc(doc(db, "attendance", id), { date: document.getElementById(`edit-date-${id}`).value, status: document.getElementById(`edit-status-${id}`).value, sessionPrice: Number(document.getElementById(`edit-price-${id}`).value), report: document.getElementById(`edit-report-${id}`).value }); 
+            loadGlobalFinancialStats();
+            if(document.getElementById('tab-reports').classList.contains('active')) { document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); } 
+            else if(document.getElementById('tab-daily-log').classList.contains('active')) { fetchDailyLog(selectedLogDate); }
+        };
+        
+        window.deleteRecord = async function(docId) { 
+            if(confirm("تأكيد الحذف النهائي لهذا السجل؟")) { 
+                await deleteDoc(doc(db, "attendance", docId)); loadGlobalFinancialStats(); 
+                if(document.getElementById('tab-reports').classList.contains('active')) { document.getElementById('manageStudentSelect').dispatchEvent(new Event('change')); }
+                else if(document.getElementById('tab-daily-log').classList.contains('active')) { fetchDailyLog(selectedLogDate); }
+            } 
+        };
+        
         document.getElementById('deleteStudentBtn').addEventListener('click', async () => { if(confirm("تنبيه خطير: هل أنت متأكد من حذف ملف الطالب بجميع سجلاته نهائياً؟")) { await deleteDoc(doc(db, "students", currentViewingStudentCode)); document.getElementById('studentDetailsSection').style.display = 'none'; loadAdminData(); } });
 
         // --- عرض واجهة الطالب ---
