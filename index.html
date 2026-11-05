@@ -507,6 +507,10 @@ details.archive[open] summary::after{transform:rotate(180deg)}
 .exam-toggle .exam-ico{width:42px;height:42px;font-size:19px}
 .exam-chev{color:var(--muted);transition:transform .2s}
 .exam-toggle[aria-expanded="true"] .exam-chev{transform:rotate(180deg)}
+.p-sum3{grid-template-columns:repeat(3,1fr)}
+.p-closing{margin-top:22px;font-size:14px;line-height:1.9;color:#1B2430}
+.p-fee{margin-top:26px;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:11.5px;line-height:1.8;color:#7b8794;text-align:center}
+.head-btns{display:flex;gap:6px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -666,6 +670,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
         <div class="mini-stats" id="archiveSummary"></div>
         <div class="btn-row">
           <button type="button" class="btn btn-ghost" data-act="print-record" id="archivePrintBtn"><i class="fa-solid fa-print"></i> طباعة السجل الكامل</button>
+          <button type="button" class="btn btn-ghost" data-act="month-report"><i class="fa-solid fa-calendar-check"></i> التقرير الشهري</button>
           <button type="button" class="btn btn-soft-danger" data-act="delete-student"><i class="fa-solid fa-user-xmark"></i> حذف الطالب</button>
         </div>
         <h4 class="sub-title"><i class="fa-solid fa-circle-notch"></i> قيد المتابعة <span class="chip chip-warning" id="archiveActiveCount"></span></h4>
@@ -722,7 +727,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
   </a>
 
   <section class="panel" style="margin-top:16px">
-    <div class="panel-head"><h2 class="panel-title"><i class="fa-solid fa-chart-line"></i> التقييمات الأخيرة <span class="chip chip-primary" id="svActiveCount"></span></h2><button type="button" class="btn btn-ghost btn-sm" data-act="print-record"><i class="fa-solid fa-print"></i> طباعة السجل</button></div>
+    <div class="panel-head"><h2 class="panel-title"><i class="fa-solid fa-chart-line"></i> التقييمات الأخيرة <span class="chip chip-primary" id="svActiveCount"></span></h2><div class="head-btns"><button type="button" class="btn btn-ghost btn-sm" data-act="month-report"><i class="fa-solid fa-calendar-check"></i> التقرير الشهري</button><button type="button" class="btn btn-ghost btn-sm" data-act="print-record"><i class="fa-solid fa-print"></i> طباعة السجل</button></div></div>
     <div class="stack" id="svActive"></div>
     <details class="archive"><summary><span><i class="fa-solid fa-check-double" style="color:var(--success)"></i> السجل المعتمد <span class="chip chip-success" id="svDoneCount"></span></span></summary><div class="stack" id="svDone"></div></details>
   </section>
@@ -1303,7 +1308,7 @@ async function payMany(records, b) {
   }, "جاري الاعتماد...");
   if (!ok) return;
   records.forEach(r => S.sel.delete(r.id));
-  toast(`تم اعتماد السداد، إيصال رقم ⁦${no}⁩`, "success"); sfx.ok();
+  toast(`تم اعتماد السداد، إيصال رقم \u2066${no}\u2069`, "success"); sfx.ok();
   if (await confirmBox(`تم اعتماد ${money(records.length)} حصة بقيمة ${money(total)} ${CUR} بتاريخ ${fmtDate(new Date(at))}. هل تريد طباعة إيصال الدفع الآن؟`, { ok: "طباعة الإيصال", title: "إيصال الدفع" }))
     printReceipt({ no, at, paid: snap, scope, payer });
 }
@@ -1691,6 +1696,48 @@ function printParentReport(pc) {
     kids.map(k => `<div class="p-kid"><div class="p-kid-head"><span>🎓 ${esc(k.name)}</span><span>${money(k.totalDue)} ${CUR}</span></div>
       ${k.unpaid.length ? `<table class="p-table"><thead><tr><th style="width:28%">التاريخ</th><th>التقييم الأكاديمي</th><th style="width:18%">القيمة</th></tr></thead><tbody>${k.unpaid.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${money(priceOf(r))} ${CUR}</td></tr>`).join("")}</tbody></table>` : `<p class="p-ok">الرصيد مكتمل ✨</p>`}</div>`).join(""));
 }
+/* --- التقرير الأكاديمي الشهري (المبلغ يُذكر بلطف في آخره) --- */
+const monthName = ym => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("ar-EG", { month: "long", year: "numeric" }); };
+function askMonthReport(code) {
+  const s = S.students.get(code); if (!s) return toast("اختر الطالب أولاً", "error");
+  const months = [...new Set(recordsOf(code).map(r => (r.date || "").slice(0, 7)).filter(Boolean))].sort().reverse();
+  const cur = todayISO().slice(0, 7), def = months.includes(cur) || !months.length ? cur : months[0];
+  openModal({
+    title: '<i class="fa-solid fa-calendar-check"></i> التقرير الأكاديمي الشهري',
+    html: `<div class="field"><span class="label">الطالب</span><div class="static">${esc(s.name)}</div></div>
+      <div class="field"><label for="repMonth">الشهر</label><input type="month" id="repMonth" class="input" value="${def}" max="${cur}"></div>
+      ${months.length ? `<div class="rec-meta">${months.slice(0, 6).map(m => `<button type="button" class="chip chip-muted" data-month="${m}">${monthName(m)}</button>`).join("")}</div>` : ""}`,
+    actions: [
+      { label: '<i class="fa-solid fa-print"></i> عرض التقرير للطباعة', cls: "btn-primary", onClick: () => { const m = $("#repMonth").value; if (!m) return toast("اختر الشهر", "error"); closeModal(); printMonthlyReport(code, m); } },
+      { label: "إلغاء", cls: "btn-ghost", onClick: () => closeModal() }
+    ]
+  });
+  $$("#modalBody [data-month]").forEach(b => b.onclick = () => { $("#repMonth").value = b.dataset.month; });
+}
+function printMonthlyReport(code, ym) {
+  const s = S.students.get(code); if (!s) return;
+  const recs = recordsOf(code).filter(r => (r.date || "").startsWith(ym)).sort((a, b) => parseDate(a.date) - parseDate(b.date));
+  const pres = recs.filter(r => r.status === PRESENT), absent = recs.length - pres.length;
+  const total = sumPrice(pres), paid = sumPrice(pres.filter(r => r.isPaid)), rem = total - paid;
+  const mName = monthName(ym);
+  const rate = recs.length ? Math.round(pres.length / recs.length * 100) : 0;
+  const notes = recs.filter(r => r.report);
+  const fee = !pres.length ? "" : rem <= 0
+    ? `رسوم حصص هذا الشهر مسددة بالكامل، شاكرين لكم حسن تعاونكم.`
+    : paid > 0
+      ? `للتذكير: رسوم حصص هذا الشهر (${money(pres.length)} حصة) ${money(total)} ${CUR}، سُدِّد منها ${money(paid)} ${CUR}، والمتبقي ${money(rem)} ${CUR}. شاكرين لكم حسن تعاونكم.`
+      : `للتذكير: رسوم حصص هذا الشهر (${money(pres.length)} حصة) ${money(total)} ${CUR}. شاكرين لكم حسن تعاونكم.`;
+  printDoc(`التقرير الأكاديمي - ${s.name} - ${mName}`, printHeader(`التقرير الأكاديمي عن شهر ${mName}`) +
+    `<div class="p-meta"><span>اسم الطالب: <b>${esc(s.name)}</b></span><span>الشهر: <b>${mName}</b></span></div>
+     <div class="p-sum p-sum3"><div class="done" style="background:#E5F3EA;border-color:#A9D7B9"><span>حصص الحضور</span><b>${money(pres.length)}</b></div><div style="background:#FCEBE9;border-color:#F3B8B2"><span>الغياب</span><b>${money(absent)}</b></div><div style="background:#EEF1EC;border-color:#C3CDD6"><span>نسبة الحضور</span><b>${money(rate)}٪</b></div></div>
+     <h3 class="p-sec">سجل الحصص والملاحظات</h3>
+     ${recs.length ? `<table class="p-table"><thead><tr><th style="width:30%">التاريخ</th><th style="width:12%">الحالة</th><th>ملاحظات المعلم</th></tr></thead>
+       <tbody>${recs.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="${r.status === PRESENT ? "p-ok" : "p-bad"}">${esc(r.status)}</td><td>${esc(r.report || "—")}</td></tr>`).join("")}</tbody></table>`
+       : `<p style="text-align:center;color:#64748b;padding:14px">لا توجد حصص مسجلة في هذا الشهر.</p>`}
+     <p class="p-closing">نشكر لكم متابعتكم واهتمامكم، ونتمنى ل${esc(s.name.split(" ")[0])} دوام التقدم والتفوق.</p>
+     <div class="p-sign" style="grid-template-columns:1fr"><div><span>المعلم: محمد رجب</span><i></i></div></div>
+     ${fee ? `<p class="p-fee">${fee}</p>` : ""}`);
+}
 function printStudentRecord(code) {
   const s = S.students.get(code); if (!s) return; const recs = recordsOf(code), due = recs.filter(isDue);
   printDoc(`التقرير الأكاديمي - ${s.name}`, printHeader("تقرير المتابعة الأكاديمية") +
@@ -1728,6 +1775,7 @@ const ACTIONS = {
   "do-print": () => window.print(),
   "close-print": () => closePrint(),
   wallet: () => showWallet(),
+  "month-report": () => askMonthReport(S.role === "admin" ? S.archiveCode : S.currentKid),
   "toggle-exams": b => { const box = $("#svExams"), open = box.hidden; box.hidden = !open; b.setAttribute("aria-expanded", open); },
   "arch-sel-all": () => archSelAll(),
   "arch-clear": () => { S.archSel.clear(); renderArchive(); },
