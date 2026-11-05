@@ -509,6 +509,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
 .exam-toggle[aria-expanded="true"] .exam-chev{transform:rotate(180deg)}
 .p-sum3{grid-template-columns:repeat(3,1fr)}
 .p-closing{margin-top:22px;font-size:14px;line-height:1.9;color:#1B2430}
+.p-table tfoot tr.p-sub td{background:#fff;font-size:13.5px;font-weight:700;color:#334155}
 .p-fee{margin-top:26px;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:11.5px;line-height:1.8;color:#7b8794;text-align:center}
 .head-btns{display:flex;gap:6px;flex-wrap:wrap}
 </style>
@@ -1721,22 +1722,19 @@ function printMonthlyReport(code, ym) {
   const total = sumPrice(pres), paid = sumPrice(pres.filter(r => r.isPaid)), rem = total - paid;
   const mName = monthName(ym);
   const rate = recs.length ? Math.round(pres.length / recs.length * 100) : 0;
-  const notes = recs.filter(r => r.report);
-  const fee = !pres.length ? "" : rem <= 0
-    ? `رسوم حصص هذا الشهر مسددة بالكامل، شاكرين لكم حسن تعاونكم.`
-    : paid > 0
-      ? `للتذكير: رسوم حصص هذا الشهر (${money(pres.length)} حصة) ${money(total)} ${CUR}، سُدِّد منها ${money(paid)} ${CUR}، والمتبقي ${money(rem)} ${CUR}. شاكرين لكم حسن تعاونكم.`
-      : `للتذكير: رسوم حصص هذا الشهر (${money(pres.length)} حصة) ${money(total)} ${CUR}. شاكرين لكم حسن تعاونكم.`;
+  const foot = !pres.length ? "" : `<tfoot>
+       <tr><td colspan="3">إجمالي رسوم الشهر (${money(pres.length)} حصة)</td><td class="p-num">${money(total)} ${CUR}</td></tr>
+       ${paid > 0 ? `<tr class="p-sub"><td colspan="3">المسدد</td><td class="p-num">${money(paid)} ${CUR}</td></tr><tr class="p-sub"><td colspan="3">المتبقي</td><td class="p-num">${money(rem)} ${CUR}</td></tr>` : ""}
+     </tfoot>`;
   printDoc(`التقرير الأكاديمي - ${s.name} - ${mName}`, printHeader(`التقرير الأكاديمي عن شهر ${mName}`) +
     `<div class="p-meta"><span>اسم الطالب: <b>${esc(s.name)}</b></span><span>الشهر: <b>${mName}</b></span></div>
      <div class="p-sum p-sum3"><div class="done" style="background:#E5F3EA;border-color:#A9D7B9"><span>حصص الحضور</span><b>${money(pres.length)}</b></div><div style="background:#FCEBE9;border-color:#F3B8B2"><span>الغياب</span><b>${money(absent)}</b></div><div style="background:#EEF1EC;border-color:#C3CDD6"><span>نسبة الحضور</span><b>${money(rate)}٪</b></div></div>
      <h3 class="p-sec">سجل الحصص والملاحظات</h3>
-     ${recs.length ? `<table class="p-table"><thead><tr><th style="width:30%">التاريخ</th><th style="width:12%">الحالة</th><th>ملاحظات المعلم</th></tr></thead>
-       <tbody>${recs.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="${r.status === PRESENT ? "p-ok" : "p-bad"}">${esc(r.status)}</td><td>${esc(r.report || "—")}</td></tr>`).join("")}</tbody></table>`
+     ${recs.length ? `<table class="p-table"><thead><tr><th style="width:27%">التاريخ</th><th style="width:11%">الحالة</th><th>ملاحظات المعلم</th><th style="width:16%">المبلغ</th></tr></thead>
+       <tbody>${recs.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="${r.status === PRESENT ? "p-ok" : "p-bad"}">${esc(r.status)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${r.status === PRESENT ? `${money(priceOf(r))} ${CUR}` : "—"}</td></tr>`).join("")}</tbody>${foot}</table>`
        : `<p style="text-align:center;color:#64748b;padding:14px">لا توجد حصص مسجلة في هذا الشهر.</p>`}
-     <p class="p-closing">نشكر لكم متابعتكم واهتمامكم، ونتمنى ل${esc(s.name.split(" ")[0])} دوام التقدم والتفوق.</p>
-     <div class="p-sign" style="grid-template-columns:1fr"><div><span>المعلم: محمد رجب</span><i></i></div></div>
-     ${fee ? `<p class="p-fee">${fee}</p>` : ""}`);
+     <p class="p-closing">نشكر لكم متابعتكم واهتمامكم، مع تمنياتنا بدوام التقدم والتفوق.</p>
+     <div class="p-sign" style="grid-template-columns:1fr"><div><span>المعلم: محمد رجب</span><i></i></div></div>`);
 }
 function printStudentRecord(code) {
   const s = S.students.get(code); if (!s) return; const recs = recordsOf(code), due = recs.filter(isDue);
