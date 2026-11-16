@@ -512,6 +512,8 @@ details.archive[open] summary::after{transform:rotate(180deg)}
 .p-table tfoot tr.p-sub td{background:#fff;font-size:13.5px;font-weight:700;color:#334155}
 .p-fee{margin-top:26px;padding-top:10px;border-top:1px dashed #cbd5e1;font-size:11.5px;line-height:1.8;color:#7b8794;text-align:center}
 .head-btns{display:flex;gap:6px;flex-wrap:wrap}
+.db-error{display:flex;flex-direction:column;gap:4px;margin:14px 0;padding:14px 16px;border-radius:var(--r-sheet);background:var(--red-soft);border:1.5px solid var(--red);color:var(--ink);font-size:14px;line-height:1.8}
+.db-error b{color:var(--red);font-size:15px}.db-error small{color:var(--muted);font-family:monospace}.db-error .btn{align-self:flex-start;margin-top:4px}
 </style>
 </head>
 <body>
@@ -574,6 +576,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
     <button type="button" class="nav-btn" data-act="tab" data-tab="chat"><i class="fa-solid fa-comments"></i><span>الرسائل</span><span class="nav-count" id="chatBadge" hidden></span></button>
   </nav>
 
+  <div class="db-error" role="alert" hidden></div>
   <main id="adminMain">
     <!-- إضافة / تعديل -->
     <section class="panel tab" id="tab-add">
@@ -714,6 +717,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
     </div>
   </header>
 
+  <div class="db-error" role="alert" hidden></div>
   <section class="hero chalkboard">
     <p class="hero-kicker" id="svGreeting"></p>
     <h2 id="svName"></h2>
@@ -915,7 +919,19 @@ function notify(title, body) {
     try { new Notification(title, { body, icon: ICON }); } catch { navigator.serviceWorker?.getRegistration?.().then(r => r?.showNotification(title, { body, icon: ICON })).catch(() => {}); }
   }
 }
-const onErr = e => { console.error(e); toast(e.code === "permission-denied" ? "لا تملك صلاحية الوصول لهذه البيانات" : "تعذر الاتصال بقاعدة البيانات", "error"); };
+const DB_ERR = {
+  "permission-denied": "قاعدة البيانات رفضت القراءة بسبب قواعد الأمان (Rules). البيانات موجودة، لكن القواعد الحالية تمنع الوصول إليها.",
+  "resource-exhausted": "تم تجاوز الحد اليومي المجاني لعدد القراءات في Firebase. البيانات سليمة، وستعود للظهور تلقائياً بعد تجدد الحصة اليومية (حوالي الساعة 11 صباحاً بتوقيت السعودية).",
+  "unavailable": "تعذر الوصول إلى قاعدة البيانات. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة.",
+  "failed-precondition": "قاعدة البيانات غير مهيأة أو معطلة في مشروع Firebase.",
+  "unauthenticated": "انتهت جلسة الدخول. سجّل الخروج ثم ادخل مرة أخرى."
+};
+const onErr = e => {
+  console.error(e);
+  const code = e && e.code || "unknown", msg = DB_ERR[code] || "تعذر تحميل البيانات من قاعدة البيانات.";
+  toast(msg, "error");
+  document.querySelectorAll(".db-error").forEach(el => { el.hidden = false; el.innerHTML = `<b>⚠️ البيانات لا تظهر</b><span>${msg}</span><small dir="ltr">Firebase: ${String(code).replace(/[<>&"]/g, "")}</small><button type="button" class="btn btn-sm btn-ghost" onclick="location.reload()">إعادة المحاولة</button>`; });
+};
 
 /* ================= المصادقة ================= */
 function show(view) { ["boot", "loginView", "adminView", "studentView"].forEach(id => $("#" + id).hidden = id !== view); }
