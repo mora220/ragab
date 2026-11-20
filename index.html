@@ -688,7 +688,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
         </div>
         <p class="hint" style="margin:-6px 0 10px"><i class="fa-solid fa-circle-info"></i> حدّد الحصص المسددة (أو اختر فترة ثم "تحديد الكل") واطبع كشف حسابها.</p>
         <div class="stack" id="archiveDone"></div>
-        <div class="sel-bar" id="archSelBar" hidden><span id="archSelInfo"></span><div class="btn-row"><button type="button" class="btn btn-primary" data-act="print-paid"><i class="fa-solid fa-print"></i> طباعة كشف المسدد</button><button type="button" class="btn btn-ghost" data-act="arch-clear"><i class="fa-solid fa-xmark"></i> إلغاء التحديد</button></div></div>
+        <div class="sel-bar" id="archSelBar" hidden><span id="archSelInfo"></span><div class="btn-row"><button type="button" class="btn btn-primary" data-act="print-paid"><i class="fa-solid fa-print"></i> طباعة كشف المسدد</button><button type="button" class="btn btn-ghost" style="color:var(--danger)" data-act="unpay-sel"><i class="fa-solid fa-rotate-left"></i> إلغاء اعتماد المحدد</button><button type="button" class="btn btn-ghost" data-act="arch-clear"><i class="fa-solid fa-xmark"></i> إلغاء التحديد</button></div></div>
       </div>
     </section>
 
@@ -796,7 +796,7 @@ try {
 }
 const { initializeApp } = fbApp;
 const { getAuth, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, onAuthStateChanged } = fbAuth;
-const { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc, writeBatch } = fbStore;
+const { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, deleteDoc, onSnapshot, updateDoc, writeBatch, arrayUnion } = fbStore;
 window.__rgReady = true;
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -841,6 +841,11 @@ const byDateDesc = (a, b) => parseDate(b.date) - parseDate(a.date);
 const recordsOf = code => [...S.att.values()].filter(r => r.studentCode === code).sort(byDateDesc);
 const unpaidOf = code => recordsOf(code).filter(isDue);
 const sumPrice = list => list.reduce((a, r) => a + priceOf(r), 0);
+/* سداد جزئي: paidPart = ما سُدد من الحصة، dueOf = المتبقي منها */
+const partOf = r => r.isPaid ? priceOf(r) : Math.min(priceOf(r), Math.max(0, num(r.paidPart)));
+const dueOf = r => r.isPaid ? 0 : Math.max(0, priceOf(r) - num(r.paidPart));
+const sumDue = list => list.reduce((a, r) => a + dueOf(r), 0);
+const sumPart = list => list.reduce((a, r) => a + partOf(r), 0);
 const sortedStudents = () => [...S.students.values()].sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
 
 /* ================= واجهة عامة: إشعارات/نوافذ ================= */
@@ -1014,7 +1019,8 @@ function computeTotals() {
     if (r.status !== PRESENT) continue;
     const p = priceOf(r), k = r.studentCode;
     if ((r.date || "").startsWith(ym)) { month++; monthAmt += p; }
-    if (r.isPaid) { tc += p; c[k] = (c[k] || 0) + p; } else { td += p; d[k] = (d[k] || 0) + p; }
+    const pd = partOf(r), du = p - pd;
+    tc += pd; td += du; if (pd) c[k] = (c[k] || 0) + pd; if (du) d[k] = (d[k] || 0) + du;
   }
   S.totals = { collected: c, due: d, tc, td, month, monthAmt };
 }
@@ -1126,7 +1132,7 @@ $("#attStudent").addEventListener("change", () => { const s = S.students.get($("
 function renderAttInfo() {
   const c = $("#attStudent").value, el = $("#attInfo");
   if (!c || !S.students.has(c)) { el.innerHTML = ""; return; }
-  const recs = recordsOf(c), due = sumPrice(recs.filter(isDue)), last = recs[0];
+  const recs = recordsOf(c), due = sumDue(recs.filter(isDue)), last = recs[0];
   el.innerHTML = `<span class="chip chip-muted"><i class="fa-regular fa-calendar"></i> آخر تقييم: ${last ? fmtDate(last.date, { day: "numeric", month: "long" }) : "لا يوجد"}</span><span class="chip ${due ? "chip-warning" : "chip-success"}">الرصيد: ${money(due)} ${CUR}</span>`;
 }
 $("#attForm").addEventListener("submit", e => { e.preventDefault(); busy($("#attBtn"), saveAttendance, "جاري الاعتماد..."); });
@@ -1161,7 +1167,7 @@ function renderWeekCounts() {
   $$("#weekGrid [data-cnt]").forEach(el => { const n = counts[el.dataset.cnt] || 0; el.textContent = n ? money(n) : ""; el.classList.toggle("has", n > 0); });
   const from = isoDate(S.weekStart), e = new Date(S.weekStart); e.setDate(e.getDate() + 6); const to = isoDate(e);
   const wk = [...S.att.values()].filter(r => r.date >= from && r.date <= to), pres = wk.filter(r => r.status === PRESENT);
-  const total = sumPrice(pres), due = sumPrice(pres.filter(r => !r.isPaid));
+  const total = sumPrice(pres), due = sumDue(pres);
   $("#weekSum").innerHTML = `<div class="mini"><span>حصص الأسبوع</span><b>${money(pres.length)}</b></div><div class="mini"><span>الغياب</span><b style="color:var(--red)">${money(wk.length - pres.length)}</b></div><div class="mini"><span>إجمالي الأسبوع</span><b>${money(total)} <small>${CUR}</small></b></div><div class="mini"><span>غير المسدد منه</span><b style="color:var(--warn)">${money(due)} <small>${CUR}</small></b></div>`;
 }
 function shiftWeek(n) { const d = new Date(S.weekStart); d.setDate(d.getDate() + n); S.weekStart = d; renderWeek(); }
@@ -1185,14 +1191,14 @@ function recordCard(r, { name = false, actions = false, date = true, prices = tr
       ${date ? `<div class="rec-date"><i class="fa-regular fa-calendar"></i>${fmtDate(r.date)}</div>` : ""}
       <div class="rec-meta">
         <span class="chip ${present ? "chip-success" : "chip-danger"}"><i class="fa-solid ${present ? "fa-check" : "fa-xmark"}"></i> ${esc(r.status)}</span>
-        ${present && prices ? `<span class="chip chip-muted">${money(priceOf(r))} ${CUR}</span>${r.isPaid ? "" : '<span class="chip chip-warning">قيد المتابعة</span>'}` : ""}
+        ${present && prices ? `<span class="chip chip-muted">${money(priceOf(r))} ${CUR}</span>${r.isPaid ? "" : num(r.paidPart) > 0 ? `<span class="chip chip-primary">مسدد جزئياً ${money(partOf(r))}</span><span class="chip chip-warning">متبقٍ ${money(dueOf(r))} ${CUR}</span>` : '<span class="chip chip-warning">قيد المتابعة</span>'}` : ""}
         ${present && r.isPaid ? `<span class="chip chip-primary"><i class="fa-solid fa-receipt"></i> ${r.paidAt ? `سُدد ${fmtDate(new Date(num(r.paidAt)), { day: "numeric", month: "long", year: "numeric" })}` : "تاريخ السداد غير مسجل"}</span>` : ""}
       </div>
       ${r.report ? `<p class="rec-report">${esc(r.report)}</p>` : ""}
       ${r.imageCount ? `<div class="rec-imgs" data-imgs="${esc(r.id)}" data-code="${esc(r.studentCode)}">${'<span class="ph"></span>'.repeat(Math.min(num(r.imageCount), 6))}</div>` : ""}
     </div>
     ${present && r.isPaid ? '<span class="stamp" aria-label="تم اعتماد السداد">معتمد</span>' : ""}
-    ${actions ? `<div class="rec-actions"><button type="button" class="icon-btn sm" data-act="edit-rec" data-id="${esc(r.id)}" aria-label="تعديل"><i class="fa-solid fa-pen"></i></button><button type="button" class="icon-btn sm danger" data-act="del-rec" data-id="${esc(r.id)}" aria-label="حذف"><i class="fa-solid fa-trash"></i></button></div>` : ""}
+    ${actions ? `<div class="rec-actions"><button type="button" class="icon-btn sm" data-act="edit-rec" data-id="${esc(r.id)}" aria-label="تعديل"><i class="fa-solid fa-pen"></i></button>${present && (r.isPaid || num(r.paidPart) > 0) ? `<button type="button" class="icon-btn sm" data-act="unpay-rec" data-id="${esc(r.id)}" aria-label="إلغاء اعتماد السداد" title="إلغاء اعتماد السداد"><i class="fa-solid fa-rotate-left"></i></button>` : ""}<button type="button" class="icon-btn sm danger" data-act="del-rec" data-id="${esc(r.id)}" aria-label="حذف"><i class="fa-solid fa-trash"></i></button></div>` : ""}
   </article>`;
 }
 function editRecord(id) {
@@ -1214,7 +1220,7 @@ function editRecord(id) {
         await Promise.all(removed.map(o => deleteDoc(doc(db, "reportImages", o.id))));
         const ok = added.length ? await saveImages(id, r.studentCode, added, orig.length) : 0;
         S.imgCache.delete(id);
-        await updateDoc(doc(db, "attendance", id), { date: $("#eDate").value, status: $('input[name="eStatus"]:checked').value, sessionPrice: num($("#ePrice").value), report: $("#eReport").value.trim(), isPaid: $("#ePaid").checked, ...($("#ePaid").checked && !r.isPaid ? { paidAt: Date.now() } : !$("#ePaid").checked && r.isPaid ? { paidAt: null, receiptNo: null } : {}), imageCount: items.length - added.length + ok });
+        await updateDoc(doc(db, "attendance", id), { date: $("#eDate").value, status: $('input[name="eStatus"]:checked').value, sessionPrice: num($("#ePrice").value), report: $("#eReport").value.trim(), isPaid: $("#ePaid").checked, ...($("#ePaid").checked && !r.isPaid ? { paidAt: Date.now(), paidPart: num($("#ePrice").value) } : !$("#ePaid").checked && r.isPaid ? { paidAt: null, receiptNo: null, paidPart: 0, pays: [] } : {}), imageCount: items.length - added.length + ok });
         if (ok < added.length) toast("تعذر رفع بعض الصور", "error");
         closeModal(); toast("تم حفظ التعديلات", "success");
       }) },
@@ -1248,25 +1254,40 @@ function showParentFinance() {
   if (!sortedStudents().some(s => s.parentCode === p)) return toast("لا يوجد أبناء مرتبطون بهذا الكود", "error");
   S.sel.clear(); S.finance = { mode: "parent", code: p }; renderFinance();
 }
-function parentData(pc) { return sortedStudents().filter(s => s.parentCode === pc).map(k => { const un = unpaidOf(k.code); return { name: k.name, code: k.code, totalDue: sumPrice(un), unpaid: un }; }); }
-const dueRow = r => `<div class="due-row ${S.sel.has(r.id) ? "picked" : ""}"><label class="due-pick"><input type="checkbox" data-sel="${esc(r.id)}" ${S.sel.has(r.id) ? "checked" : ""} aria-label="تحديد حصة ${fmtDate(r.date)}"><span><b>${fmtDate(r.date)}</b>${r.report ? `<small class="muted due-note">${esc(r.report)}</small>` : ""}</span></label><div class="due-right"><span class="amount">${money(priceOf(r))} ${CUR}</span><button type="button" class="btn btn-sm btn-success" data-act="pay-one" data-id="${esc(r.id)}"><i class="fa-solid fa-check"></i> اعتماد</button></div></div>`;
+function parentData(pc) { return sortedStudents().filter(s => s.parentCode === pc).map(k => { const un = unpaidOf(k.code); return { name: k.name, code: k.code, totalDue: sumDue(un), unpaid: un }; }); }
+const dueRow = r => `<div class="due-row ${S.sel.has(r.id) ? "picked" : ""}"><label class="due-pick"><input type="checkbox" data-sel="${esc(r.id)}" ${S.sel.has(r.id) ? "checked" : ""} aria-label="تحديد حصة ${fmtDate(r.date)}"><span><b>${fmtDate(r.date)}</b>${r.report ? `<small class="muted due-note">${esc(r.report)}</small>` : ""}</span></label><div class="due-right"><span class="amount">${money(dueOf(r))} ${CUR}${dueOf(r) < priceOf(r) ? `<small class="muted"> (باقي من ${money(priceOf(r))})</small>` : ""}</span><button type="button" class="btn btn-sm btn-success" data-act="pay-one" data-id="${esc(r.id)}"><i class="fa-solid fa-check"></i> اعتماد</button></div></div>`;
 S.sel = new Set();
 const finScope = () => !S.finance ? [] : S.finance.mode === "student" ? [S.finance.code] : parentData(S.finance.code).map(k => k.code);
 const payerLabel = () => !S.finance ? "" : S.finance.mode === "student" ? `ولي أمر الطالب ${studentName(S.finance.code)}` : `ولي الأمر (${S.finance.code})`;
 const selAllBtn = (code, list) => list.length ? `<button type="button" class="btn btn-sm btn-ghost" style="min-width:0" data-act="sel-all" data-code="${esc(code)}"><i class="fa-solid fa-check"></i> ${list.every(r => S.sel.has(r.id)) ? "إلغاء التحديد" : "تحديد الكل"}</button>` : "";
+/* مبلغ إيصال معيّن على حصة: من سجل الدفعات pays، أو الحصة كاملة للإيصالات القديمة */
+function payOf(r, no) {
+  const p = Array.isArray(r.pays) ? r.pays.find(x => x.no === no) : null;
+  if (p) return { amt: num(p.amt), at: num(p.at) };
+  if (r.receiptNo === no) return { amt: priceOf(r), at: num(r.paidAt) };
+  return null;
+}
+function receiptGroups(scope) {
+  const groups = new Map();
+  for (const r of S.att.values()) {
+    if (!scope.has(r.studentCode)) continue;
+    const nos = new Set((Array.isArray(r.pays) ? r.pays.map(x => x.no) : []).concat(r.receiptNo ? [r.receiptNo] : []));
+    for (const no of nos) { const p = payOf(r, no); if (!p) continue; if (!groups.has(no)) groups.set(no, []); groups.get(no).push({ r, ...p }); }
+  }
+  return groups;
+}
 function receiptsHTML() {
-  const scope = new Set(finScope()), groups = new Map();
-  for (const r of S.att.values()) if (r.receiptNo && scope.has(r.studentCode)) { if (!groups.has(r.receiptNo)) groups.set(r.receiptNo, []); groups.get(r.receiptNo).push(r); }
-  const list = [...groups.entries()].map(([no, recs]) => ({ no, recs, at: Math.max(...recs.map(r => num(r.paidAt))) })).sort((a, b) => b.at - a.at).slice(0, 12);
+  const groups = receiptGroups(new Set(finScope()));
+  const list = [...groups.entries()].map(([no, ls]) => ({ no, ls, at: Math.max(...ls.map(l => l.at)), amt: ls.reduce((a, l) => a + l.amt, 0) })).sort((a, b) => b.at - a.at).slice(0, 12);
   if (!list.length) return "";
-  return `<h4 class="sub-title"><i class="fa-solid fa-receipt"></i> إيصالات الدفع السابقة</h4><div class="stack">${list.map(g => `<div class="due-row"><div><b>إيصال رقم <bdi dir="ltr">${esc(g.no)}</bdi></b><p class="muted small">${g.at ? fmtDate(new Date(g.at)) : ""}، ${money(g.recs.length)} حصة</p></div><div class="due-right"><span class="amount">${money(sumPrice(g.recs))} ${CUR}</span><button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> طباعة</button></div></div>`).join("")}</div>`;
+  return `<h4 class="sub-title"><i class="fa-solid fa-receipt"></i> إيصالات الدفع السابقة</h4><div class="stack">${list.map(g => `<div class="due-row"><div><b>إيصال رقم <bdi dir="ltr">${esc(g.no)}</bdi></b><p class="muted small">${g.at ? fmtDate(new Date(g.at)) : ""}، ${money(g.ls.length)} حصة</p></div><div class="due-right"><span class="amount">${money(g.amt)} ${CUR}</span><button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> طباعة</button><button type="button" class="btn btn-sm btn-ghost" style="color:var(--danger)" data-act="cancel-receipt" data-id="${esc(g.no)}"><i class="fa-solid fa-rotate-left"></i> إلغاء</button></div></div>`).join("")}</div>`;
 }
 function renderSelBar() {
   const bar = $("#selBar"); if (!bar) return;
   const recs = [...S.sel].map(id => S.att.get(id)).filter(Boolean);
   bar.hidden = !recs.length;
   if (!recs.length) return;
-  $("#selInfo").innerHTML = `المحدد: <b>${money(recs.length)}</b> حصة بقيمة <b class="money">${money(sumPrice(recs))} ${CUR}</b>`;
+  $("#selInfo").innerHTML = `المحدد: <b>${money(recs.length)}</b> حصة بقيمة <b class="money">${money(sumDue(recs))} ${CUR}</b>`;
   $$("#finResults .due-row").forEach(row => { const cb = row.querySelector("[data-sel]"); if (cb) row.classList.toggle("picked", cb.checked); });
 }
 function renderFinance() {
@@ -1274,13 +1295,13 @@ function renderFinance() {
   if (!f) { box.innerHTML = ""; S.sel.clear(); return; }
   const dueIds = new Set(finScope().flatMap(c => unpaidOf(c).map(r => r.id)));
   [...S.sel].forEach(id => { if (!dueIds.has(id)) S.sel.delete(id); });
-  const hint = dueIds.size ? `<p class="hint" style="margin:-4px 0 10px"><i class="fa-solid fa-circle-info"></i> للدفع الجزئي: حدّد الحصص التي دفعها ولي الأمر، ثم اعتمدها واطبع الإيصال.</p>` : "";
+  const hint = dueIds.size ? `<p class="hint" style="margin:-4px 0 10px"><i class="fa-solid fa-circle-info"></i> للدفع الجزئي: حدّد الحصص التي دفعها ولي الأمر، أو اضغط «سداد مبلغ» ليُخصم المبلغ من الحصص الأقدم تلقائياً.</p>` : "";
   const selBar = `<div class="sel-bar" id="selBar" hidden><span id="selInfo"></span><div class="btn-row"><button type="button" class="btn btn-success" data-act="pay-sel"><i class="fa-solid fa-receipt"></i> اعتماد وطباعة إيصال</button><button type="button" class="btn btn-ghost" data-act="preview-sel"><i class="fa-solid fa-eye"></i> معاينة الإيصال</button></div></div>`;
   if (f.mode === "student") {
     const s = S.students.get(f.code); if (!s) { S.finance = null; box.innerHTML = ""; return; }
-    const list = unpaidOf(f.code), total = sumPrice(list), c = esc(f.code);
+    const list = unpaidOf(f.code), total = sumDue(list), c = esc(f.code);
     box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(list.length)} حصة</span></div>
-      ${list.length ? `<div class="total-actions"><button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button><button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button></div>` : ""}</div>
+      ${list.length ? `<div class="total-actions"><button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button><button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button><button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button></div>` : ""}</div>
       <div class="kid-block-head" style="margin-top:20px"><h4 class="sub-title" style="margin:0"><i class="fa-solid fa-clock-rotate-left"></i> الحصص غير المعتمدة</h4>${selAllBtn(f.code, list)}</div>
       ${hint}${list.length ? `<div class="stack">${list.map(dueRow).join("")}</div>` : empty("fa-face-smile", "رصيد الطالب مكتمل، لا توجد حصص معلّقة", "success")}
       ${receiptsHTML()}${selBar}`;
@@ -1288,7 +1309,7 @@ function renderFinance() {
     const kids = parentData(f.code); if (!kids.length) { S.finance = null; box.innerHTML = ""; return; }
     const total = kids.reduce((a, k) => a + k.totalDue, 0), count = kids.reduce((a, k) => a + k.unpaid.length, 0);
     box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">الرصيد الإجمالي لولي الأمر (${esc(f.code)})</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(count)} حصة، ${money(kids.length)} أبناء</span></div>
-      <div class="total-actions"><button type="button" class="btn btn-ghost" data-act="print-parent" data-code="${esc(f.code)}"><i class="fa-solid fa-print"></i> التقرير الشامل</button></div></div>
+      <div class="total-actions">${total ? `<button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button>` : ""}<button type="button" class="btn btn-ghost" data-act="print-parent" data-code="${esc(f.code)}"><i class="fa-solid fa-print"></i> التقرير الشامل</button></div></div>
       <div style="margin-top:16px">${hint}</div>
       ${kids.map(k => `<div class="kid-block"><div class="kid-block-head"><h4><i class="fa-solid fa-user-graduate"></i> ${esc(k.name)}</h4>
         <div class="btn-row" style="flex:0"><span class="chip ${k.totalDue ? "chip-warning" : "chip-success"}">${money(k.totalDue)} ${CUR}، ${money(k.unpaid.length)} حصة</span>
@@ -1316,18 +1337,108 @@ async function payOne(id, b) {
 }
 async function payMany(records, b) {
   if (!records.length) return;
-  const total = sumPrice(records);
+  const total = sumDue(records);
   const at = await askPayDate(records.length, total); if (!at) return;
-  const no = newReceiptNo(), scope = finScope(), payer = payerLabel(), snap = records.map(r => ({ ...r }));
+  await commitPay(records.map(r => ({ r, amt: dueOf(r), full: true, after: 0 })), at, b);
+}
+/* تنفيذ دفعة: lines = [{r, amt, full, after}] */
+async function commitPay(lines, at, b) {
+  const no = newReceiptNo(), scope = finScope(), payer = payerLabel();
+  const snap = lines.map(l => ({ ...l.r, _amt: l.amt, _after: l.after })), total = lines.reduce((a, l) => a + l.amt, 0);
   const ok = await busy(b, async () => {
-    for (let i = 0; i < records.length; i += 450) { const batch = writeBatch(db); records.slice(i, i + 450).forEach(r => batch.update(doc(db, "attendance", r.id), { isPaid: true, paidAt: at, receiptNo: no })); await batch.commit(); }
+    for (let i = 0; i < lines.length; i += 450) {
+      const batch = writeBatch(db);
+      lines.slice(i, i + 450).forEach(l => batch.update(doc(db, "attendance", l.r.id), l.full
+        ? { isPaid: true, paidAt: at, receiptNo: no, paidPart: priceOf(l.r), pays: arrayUnion({ no, at, amt: l.amt }) }
+        : { paidPart: partOf(l.r) + l.amt, partAt: at, pays: arrayUnion({ no, at, amt: l.amt }) }));
+      await batch.commit();
+    }
     return true;
   }, "جاري الاعتماد...");
   if (!ok) return;
-  records.forEach(r => S.sel.delete(r.id));
-  toast(`تم اعتماد السداد، إيصال رقم \u2066${no}\u2069`, "success"); sfx.ok();
-  if (await confirmBox(`تم اعتماد ${money(records.length)} حصة بقيمة ${money(total)} ${CUR} بتاريخ ${fmtDate(new Date(at))}. هل تريد طباعة إيصال الدفع الآن؟`, { ok: "طباعة الإيصال", title: "إيصال الدفع" }))
+  lines.forEach(l => S.sel.delete(l.r.id));
+  toast(`تم تسجيل السداد، إيصال رقم \u2066${no}\u2069`, "success"); sfx.ok();
+  const part = lines.filter(l => !l.full).length;
+  if (await confirmBox(`تم تسجيل ${money(total)} ${CUR} بتاريخ ${fmtDate(new Date(at))}، ${money(lines.length - part)} حصة مكتملة${part ? ` وحصة واحدة بسداد جزئي` : ""}. هل تريد طباعة إيصال الدفع الآن؟`, { ok: "طباعة الإيصال", title: "إيصال الدفع" }))
     printReceipt({ no, at, paid: snap, scope, payer });
+}
+/* توزيع مبلغ على الحصص الأقدم أولاً */
+function allocate(codes, amount) {
+  const list = codes.flatMap(c => unpaidOf(c)).sort((a, b) => parseDate(a.date) - parseDate(b.date));
+  let left = amount; const lines = [];
+  for (const r of list) { if (left <= 0) break; const d = dueOf(r), amt = Math.min(d, left); lines.push({ r, amt, full: amt >= d, after: d - amt }); left -= amt; }
+  return lines;
+}
+function askPayAmount(codes, total) {
+  return new Promise(res => {
+    openModal({
+      title: '<i class="fa-solid fa-coins"></i> سداد مبلغ من الحساب',
+      html: `<p class="confirm-text">الرصيد المستحق: <b class="money">${money(total)} ${CUR}</b>. سيُخصم المبلغ من أقدم الحصص أولاً، وإن بقي جزء من حصة يُسجَّل كسداد جزئي.</p>
+        <div class="grid-2" style="margin-top:14px"><div class="field"><label for="payAmt">المبلغ المسدد (${CUR})</label><input type="number" id="payAmt" class="input" min="1" max="${total}" inputmode="decimal" placeholder="مثال: 1000"></div>
+        <div class="field"><label for="payDate">تاريخ السداد</label><input type="date" id="payDate" class="input" value="${todayISO()}" max="${todayISO()}"></div></div>
+        <div id="payPrev" class="hint" style="margin-top:8px"></div>`,
+      onClose: () => res(null),
+      actions: [
+        { label: '<i class="fa-solid fa-check"></i> اعتماد السداد', cls: "btn-success", onClick: () => {
+          const amt = num($("#payAmt").value), v = $("#payDate").value;
+          if (!(amt > 0)) return toast("أدخل مبلغاً صحيحاً", "error");
+          if (amt > total) return toast(`المبلغ أكبر من الرصيد المستحق (${money(total)} ${CUR})`, "error");
+          if (!v) return toast("اختر تاريخ السداد", "error");
+          const at = v === todayISO() ? Date.now() : parseDate(v).getTime() + 12 * 3600e3;
+          S.onModalClose = null; closeModal(); res({ amount: amt, at });
+        } },
+        { label: "إلغاء", cls: "btn-ghost", onClick: () => closeModal() }
+      ]
+    });
+    $("#payAmt").addEventListener("input", () => {
+      const amt = num($("#payAmt").value), box = $("#payPrev");
+      if (!(amt > 0)) { box.textContent = ""; return; }
+      if (amt > total) { box.textContent = "المبلغ أكبر من الرصيد المستحق"; return; }
+      const ls = allocate(codes, amt), part = ls.filter(l => !l.full)[0], full = ls.filter(l => l.full).length;
+      box.innerHTML = `سيُسدَّد <b>${money(full)}</b> حصة كاملة${part ? ` وجزء من حصة ${fmtDate(part.r.date)} (يتبقى ${money(part.after)} ${CUR})` : ""}، والمتبقي من الحساب <b>${money(total - amt)} ${CUR}</b>.`;
+    });
+  });
+}
+async function payAmount(b) {
+  const codes = finScope(), total = sumDue(codes.flatMap(c => unpaidOf(c)));
+  if (!total) return toast("لا يوجد رصيد مستحق", "info");
+  const x = await askPayAmount(codes, total); if (!x) return;
+  const lines = allocate(codes, x.amount); if (!lines.length) return;
+  await commitPay(lines, x.at, b);
+}
+/* إلغاء اعتماد حصص (خطأ في الاعتماد): تعود غير مسددة بالكامل */
+const resetPay = { isPaid: false, paidAt: null, receiptNo: null, paidPart: 0, partAt: null, pays: [] };
+async function unpayRecords(records, b) {
+  records = records.filter(r => r && (r.isPaid || num(r.paidPart) > 0)); if (!records.length) return;
+  const amt = sumPart(records);
+  if (!(await confirmBox(`سيتم إلغاء اعتماد ${money(records.length)} حصة (مسدد منها ${money(amt)} ${CUR}) وتعود إلى الحصص غير المسددة. هل أنت متأكد؟`, { ok: "إلغاء الاعتماد", danger: true, title: "إلغاء اعتماد السداد" }))) return;
+  const ok = await busy(b, async () => {
+    for (let i = 0; i < records.length; i += 450) { const batch = writeBatch(db); records.slice(i, i + 450).forEach(r => batch.update(doc(db, "attendance", r.id), resetPay)); await batch.commit(); }
+    return true;
+  }, "جاري الإلغاء...");
+  if (!ok) return;
+  records.forEach(r => S.archSel.delete(r.id));
+  toast("تم إلغاء الاعتماد", "success");
+}
+/* إلغاء إيصال كامل: يُخصم مبلغه من الحصص ويبقى ما سُدد بإيصالات أخرى */
+async function cancelReceipt(no, b) {
+  const ls = receiptGroups(new Set(finScope())).get(no); if (!ls || !ls.length) return;
+  const total = ls.reduce((a, l) => a + l.amt, 0);
+  if (!(await confirmBox(`سيتم إلغاء الإيصال رقم ${no} بقيمة ${money(total)} ${CUR} (${money(ls.length)} حصة) وتعود المبالغ إلى الرصيد المستحق. هل أنت متأكد؟`, { ok: "إلغاء الإيصال", danger: true, title: "إلغاء إيصال" }))) return;
+  const ok = await busy(b, async () => {
+    for (let i = 0; i < ls.length; i += 450) {
+      const batch = writeBatch(db);
+      ls.slice(i, i + 450).forEach(({ r }) => {
+        const has = Array.isArray(r.pays) && r.pays.some(x => x.no === no);
+        if (!has) { batch.update(doc(db, "attendance", r.id), resetPay); return; }
+        const pays = r.pays.filter(x => x.no !== no), part = pays.reduce((a, x) => a + num(x.amt), 0), full = part > 0 && part >= priceOf(r), last = pays[pays.length - 1];
+        batch.update(doc(db, "attendance", r.id), { pays, paidPart: full ? priceOf(r) : part, isPaid: full, paidAt: full && last ? last.at : null, receiptNo: full && last ? last.no : null, partAt: !full && last ? last.at : null });
+      });
+      await batch.commit();
+    }
+    return true;
+  }, "جاري الإلغاء...");
+  if (ok) toast("تم إلغاء الإيصال", "success");
 }
 function askPayDate(count, total) {
   return new Promise(res => {
@@ -1349,20 +1460,21 @@ function askPayDate(count, total) {
 }
 function selRecords() { return [...S.sel].map(id => S.att.get(id)).filter(Boolean); }
 function reprintReceipt(no) {
-  const recs = [...S.att.values()].filter(r => r.receiptNo === no); if (!recs.length) return;
-  const codes = [...new Set(recs.map(r => r.studentCode))], pc = S.students.get(codes[0])?.parentCode;
+  const ls = [...receiptGroups(new Set(S.students.keys())).get(no) || []]; if (!ls.length) return;
+  const codes = [...new Set(ls.map(l => l.r.studentCode))], pc = S.students.get(codes[0])?.parentCode;
   const payer = codes.length > 1 && pc ? `ولي الأمر (${pc})` : `ولي أمر الطالب ${studentName(codes[0])}`;
   const scope = codes.length > 1 && pc ? sortedStudents().filter(x => x.parentCode === pc).map(x => x.code) : codes;
-  printReceipt({ no, at: Math.max(...recs.map(r => num(r.paidAt))), paid: recs, scope, payer, reprint: true });
+  printReceipt({ no, at: Math.max(...ls.map(l => l.at)), paid: ls.map(l => ({ ...l.r, _amt: l.amt })), scope, payer, reprint: true });
 }
+const recAmt = r => r._amt !== undefined ? r._amt : priceOf(r);
 function printReceipt({ no, at, paid, scope, payer, draft = false, reprint = false }) {
-  const paidIds = new Set(paid.map(r => r.id));
-  const remaining = scope.flatMap(c => unpaidOf(c)).filter(r => !paidIds.has(r.id)).sort((a, b) => parseDate(a.date) - parseDate(b.date));
+  const paidMap = new Map(paid.map(r => [r.id, r]));
+  const remaining = scope.flatMap(c => unpaidOf(c)).map(r => { const p = paidMap.get(r.id), d = p && p._after !== undefined ? p._after : dueOf(r); return d > 0 ? { ...r, _amt: d, _rest: d < priceOf(r) } : null; }).filter(Boolean).sort((a, b) => parseDate(a.date) - parseDate(b.date));
   const multi = new Set([...paid, ...remaining].map(r => r.studentCode)).size > 1;
   const paidSorted = [...paid].sort((a, b) => parseDate(a.date) - parseDate(b.date));
-  const pTotal = sumPrice(paid), rTotal = sumPrice(remaining);
+  const pTotal = paid.reduce((a, r) => a + recAmt(r), 0), rTotal = remaining.reduce((a, r) => a + r._amt, 0);
   const head = `<tr>${multi ? "<th>الطالب</th>" : ""}<th>تاريخ الحصة</th><th style="width:22%">القيمة</th></tr>`;
-  const row = r => `<tr>${multi ? `<td>${esc(studentName(r.studentCode))}</td>` : ""}<td>${fmtDate(r.date)}</td><td class="p-num">${money(priceOf(r))} ${CUR}</td></tr>`;
+  const row = r => `<tr>${multi ? `<td>${esc(studentName(r.studentCode))}</td>` : ""}<td>${fmtDate(r.date)}${r._rest ? " <small>(الجزء المتبقي من الحصة)</small>" : recAmt(r) < priceOf(r) ? ` <small>(دفعة جزئية من ${money(priceOf(r))} ${CUR})</small>` : ""}</td><td class="p-num">${money(recAmt(r))} ${CUR}</td></tr>`;
   const cols = multi ? 2 : 1;
   const names = [...new Set(paid.map(r => studentName(r.studentCode)))].join("، ");
   printDoc(`إيصال دفع ${no}`, printHeader(draft ? "معاينة إيصال دفع (غير معتمد)" : "إيصال دفع حصص دراسية") +
@@ -1382,7 +1494,7 @@ function renderArchive() {
   const box = $("#archiveBody"), s = S.students.get(S.archiveCode);
   if (!s) { box.hidden = true; S.archiveCode = ""; return; } box.hidden = false;
   const recs = recordsOf(s.code), active = recs.filter(r => !r.isPaid), done = recs.filter(r => r.isPaid);
-  const present = recs.filter(r => r.status === PRESENT).length, due = sumPrice(recs.filter(isDue));
+  const present = recs.filter(r => r.status === PRESENT).length, due = sumDue(recs.filter(isDue));
   $("#archivePrintBtn").dataset.code = s.code;
   $("#archiveSummary").innerHTML = `<div class="mini"><span>إجمالي التقييمات</span><b>${money(recs.length)}</b></div><div class="mini"><span>الحضور</span><b style="color:var(--success)">${money(present)}</b></div><div class="mini"><span>الغياب</span><b style="color:var(--danger)">${money(recs.length - present)}</b></div><div class="mini"><span>الرصيد المتبقي</span><b style="color:var(--warning)">${money(due)} <small>${CUR}</small></b></div>`;
   $("#archiveActiveCount").textContent = money(active.length); $("#archiveDoneCount").textContent = money(done.length);
@@ -1393,7 +1505,7 @@ function renderArchive() {
   $("#archSelAll").hidden = !pickable.length;
   $("#archSelAll").innerHTML = `<i class="fa-solid fa-check"></i> ${pickable.length && pickable.every(r => S.archSel.has(r.id)) ? "إلغاء التحديد" : "تحديد الكل"}`;
   const pays = paymentsOf(s.code); $("#archPayCount").textContent = money(pays.length);
-  $("#archPayments").innerHTML = pays.length ? `<div class="stack">${pays.map(g => `<div class="due-row"><div><b>${g.at ? fmtDate(new Date(g.at)) : "تاريخ غير مسجل"}</b><p class="muted small">${money(g.recs.length)} حصة مسددة${g.no ? `، إيصال رقم <bdi dir="ltr">${esc(g.no)}</bdi>` : ""}</p></div><div class="due-right"><span class="amount">${money(sumPrice(g.recs))} ${CUR}</span>${g.no ? `<button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> الإيصال</button>` : `<button type="button" class="btn btn-sm btn-ghost" data-act="print-pay-group" data-id="${esc(g.key)}"><i class="fa-solid fa-print"></i> كشف</button>`}</div></div>`).join("")}</div>` : empty("fa-receipt", "لا توجد دفعات مسجلة بتاريخ سداد بعد");
+  $("#archPayments").innerHTML = pays.length ? `<div class="stack">${pays.map(g => `<div class="due-row"><div><b>${g.at ? fmtDate(new Date(g.at)) : "تاريخ غير مسجل"}</b><p class="muted small">${money(g.recs.length)} حصة${g.no ? `، إيصال رقم <bdi dir="ltr">${esc(g.no)}</bdi>` : ""}</p></div><div class="due-right"><span class="amount">${money(g.amt)} ${CUR}</span>${g.no ? `<button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> الإيصال</button>` : `<button type="button" class="btn btn-sm btn-ghost" data-act="print-pay-group" data-id="${esc(g.key)}"><i class="fa-solid fa-print"></i> كشف</button>`}</div></div>`).join("")}</div>` : empty("fa-receipt", "لا توجد دفعات مسجلة بتاريخ سداد بعد");
   renderArchSel();
 }
 S.archSel = new Set();
@@ -1405,10 +1517,13 @@ function archDoneShown(done) {
 function paymentsOf(code) {
   const g = new Map();
   for (const r of recordsOf(code)) {
-    if (!r.isPaid || r.status !== PRESENT || (!r.receiptNo && !r.paidAt)) continue;
-    const key = r.receiptNo ? "R:" + r.receiptNo : "D:" + isoDate(new Date(num(r.paidAt)));
-    if (!g.has(key)) g.set(key, { key, no: r.receiptNo || "", recs: [], at: 0 });
-    const x = g.get(key); x.recs.push(r); x.at = Math.max(x.at, num(r.paidAt));
+    if (r.status !== PRESENT) continue;
+    const pays = Array.isArray(r.pays) && r.pays.length ? r.pays.map(p => ({ no: p.no, at: num(p.at), amt: num(p.amt) })) : (r.isPaid && (r.receiptNo || r.paidAt) ? [{ no: r.receiptNo || "", at: num(r.paidAt), amt: priceOf(r) }] : []);
+    for (const p of pays) {
+      const key = p.no ? "R:" + p.no : "D:" + isoDate(new Date(p.at));
+      if (!g.has(key)) g.set(key, { key, no: p.no || "", recs: [], at: 0, amt: 0 });
+      const x = g.get(key); x.recs.push(r); x.at = Math.max(x.at, p.at); x.amt += p.amt;
+    }
   }
   return [...g.values()].sort((a, b) => b.at - a.at);
 }
@@ -1551,7 +1666,7 @@ function renderStudentView() {
   const s = S.students.get(S.currentKid); if (!s) return;
   $("#svName").textContent = s.name;
   $("#kidChips").innerHTML = S.kidCodes.map(c => `<button type="button" class="kid-chip ${c === S.currentKid ? "active" : ""}" data-act="pick-kid" data-code="${esc(c)}">${esc(studentName(c))}</button>`).join("");
-  const recs = recordsOf(s.code), due = recs.filter(isDue), dueTotal = sumPrice(due);
+  const recs = recordsOf(s.code), due = recs.filter(isDue), dueTotal = sumDue(due);
   const present = recs.filter(r => r.status === PRESENT).length;
   $("#svStats").innerHTML = `
     <div class="stat"><span class="stat-label"><i class="fa-solid fa-check"></i> الحضور</span><span class="stat-value">${money(present)}</span></div>
@@ -1570,10 +1685,10 @@ function renderStudentView() {
 }
 function showWallet() {
   const s = S.students.get(S.currentKid); if (!s) return;
-  const due = unpaidOf(s.code), dueTotal = sumPrice(due);
+  const due = unpaidOf(s.code), dueTotal = sumDue(due);
   let html = `<div class="total-card ${dueTotal ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(dueTotal)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(due.length)} حصة غير معتمدة</span></div></div>`;
   html += due.length
-    ? `<h4 class="sub-title"><i class="fa-regular fa-calendar"></i> تواريخ الحصص</h4><div class="stack">${due.map(r => `<div class="due-row"><b>${fmtDate(r.date, { weekday: "long", day: "numeric", month: "long" })}</b><span class="amount">${money(priceOf(r))} ${CUR}</span></div>`).join("")}</div>`
+    ? `<h4 class="sub-title"><i class="fa-regular fa-calendar"></i> تواريخ الحصص</h4><div class="stack">${due.map(r => `<div class="due-row"><b>${fmtDate(r.date, { weekday: "long", day: "numeric", month: "long" })}</b><span class="amount">${money(dueOf(r))} ${CUR}</span></div>`).join("")}</div>`
     : `<div style="margin-top:14px">${empty("fa-shield-heart", "الرصيد مكتمل 🌟 شكراً لكم", "success")}</div>`;
   if (S.isParent) {
     const kids = parentData(S.parentCode), total = kids.reduce((a, k) => a + k.totalDue, 0), count = kids.reduce((a, k) => a + k.unpaid.length, 0);
@@ -1698,11 +1813,11 @@ function printDoc(title, html) {
 }
 function closePrint() { document.body.classList.remove("printing"); $("#printableArea").innerHTML = ""; if (S.prevTitle) document.title = S.prevTitle; }
 function printStudentInvoice(code) {
-  const s = S.students.get(code); if (!s) return; const list = unpaidOf(code), total = sumPrice(list);
+  const s = S.students.get(code); if (!s) return; const list = unpaidOf(code), total = sumDue(list);
   printDoc(`كشف حساب - ${s.name}`, printHeader("كشف حساب الحصص الدراسية") +
     `<div class="p-meta"><span>اسم الطالب: <b>${esc(s.name)}</b></span><span>عدد الحصص المعلّقة: <b>${money(list.length)}</b></span></div>
      <table class="p-table"><thead><tr><th style="width:28%">تاريخ الحصة</th><th>التقرير / الملاحظات</th><th style="width:18%">المبلغ</th></tr></thead>
-     <tbody>${list.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${money(priceOf(r))} ${CUR}</td></tr>`).join("")}</tbody>
+     <tbody>${list.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${money(dueOf(r))} ${CUR}</td></tr>`).join("")}</tbody>
      <tfoot><tr><td colspan="2">الإجمالي المطلوب</td><td class="p-num">${money(total)} ${CUR}</td></tr></tfoot></table>`);
 }
 function printParentReport(pc) {
@@ -1711,7 +1826,7 @@ function printParentReport(pc) {
   printDoc("التقرير الشامل لولي الأمر", printHeader("التقرير الأكاديمي الشامل لولي الأمر") +
     `<div class="p-total">الرصيد الإجمالي: ${money(total)} ${CUR}، ${money(count)} حصة</div>` +
     kids.map(k => `<div class="p-kid"><div class="p-kid-head"><span>🎓 ${esc(k.name)}</span><span>${money(k.totalDue)} ${CUR}</span></div>
-      ${k.unpaid.length ? `<table class="p-table"><thead><tr><th style="width:28%">التاريخ</th><th>التقييم الأكاديمي</th><th style="width:18%">القيمة</th></tr></thead><tbody>${k.unpaid.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${money(priceOf(r))} ${CUR}</td></tr>`).join("")}</tbody></table>` : `<p class="p-ok">الرصيد مكتمل ✨</p>`}</div>`).join(""));
+      ${k.unpaid.length ? `<table class="p-table"><thead><tr><th style="width:28%">التاريخ</th><th>التقييم الأكاديمي</th><th style="width:18%">القيمة</th></tr></thead><tbody>${k.unpaid.map(r => `<tr><td>${fmtDate(r.date)}</td><td>${esc(r.report || "—")}</td><td class="p-num">${money(dueOf(r))} ${CUR}</td></tr>`).join("")}</tbody></table>` : `<p class="p-ok">الرصيد مكتمل ✨</p>`}</div>`).join(""));
 }
 /* --- التقرير الأكاديمي الشهري (المبلغ يُذكر بلطف في آخره) --- */
 const monthName = ym => { const [y, m] = ym.split("-").map(Number); return new Date(y, m - 1, 1).toLocaleDateString("ar-EG", { month: "long", year: "numeric" }); };
@@ -1735,7 +1850,7 @@ function printMonthlyReport(code, ym) {
   const s = S.students.get(code); if (!s) return;
   const recs = recordsOf(code).filter(r => (r.date || "").startsWith(ym)).sort((a, b) => parseDate(a.date) - parseDate(b.date));
   const pres = recs.filter(r => r.status === PRESENT), absent = recs.length - pres.length;
-  const total = sumPrice(pres), paid = sumPrice(pres.filter(r => r.isPaid)), rem = total - paid;
+  const total = sumPrice(pres), paid = sumPart(pres), rem = total - paid;
   const mName = monthName(ym);
   const rate = recs.length ? Math.round(pres.length / recs.length * 100) : 0;
   const foot = !pres.length ? "" : `<tfoot>
@@ -1755,9 +1870,9 @@ function printMonthlyReport(code, ym) {
 function printStudentRecord(code) {
   const s = S.students.get(code); if (!s) return; const recs = recordsOf(code), due = recs.filter(isDue);
   printDoc(`التقرير الأكاديمي - ${s.name}`, printHeader("تقرير المتابعة الأكاديمية") +
-    `<div class="p-meta"><span>اسم الطالب: <b>${esc(s.name)}</b></span><span>عدد التقييمات: <b>${money(recs.length)}</b></span><span>الرصيد المتبقي: <b>${money(sumPrice(due))} ${CUR}</b></span></div>
+    `<div class="p-meta"><span>اسم الطالب: <b>${esc(s.name)}</b></span><span>عدد التقييمات: <b>${money(recs.length)}</b></span><span>الرصيد المتبقي: <b>${money(sumDue(due))} ${CUR}</b></span></div>
      <table class="p-table"><thead><tr><th style="width:28%">التاريخ</th><th style="width:12%">الحالة</th><th>التقييم والملاحظات</th><th style="width:14%">السداد</th></tr></thead>
-     <tbody>${recs.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="${r.status === PRESENT ? "p-ok" : "p-bad"}">${esc(r.status)}</td><td>${esc(r.report || "—")}</td><td>${r.status !== PRESENT ? "—" : r.isPaid ? "معتمد" : "متبقٍ"}</td></tr>`).join("") || `<tr><td colspan="4">لا توجد سجلات</td></tr>`}</tbody></table>`);
+     <tbody>${recs.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="${r.status === PRESENT ? "p-ok" : "p-bad"}">${esc(r.status)}</td><td>${esc(r.report || "—")}</td><td>${r.status !== PRESENT ? "—" : r.isPaid ? "معتمد" : num(r.paidPart) > 0 ? "جزئي" : "متبقٍ"}</td></tr>`).join("") || `<tr><td colspan="4">لا توجد سجلات</td></tr>`}</tbody></table>`);
 }
 
 /* ================= موزّع الأحداث الموحّد ================= */
@@ -1797,7 +1912,11 @@ const ACTIONS = {
   "print-pay-group": (b, c, key) => { const g = paymentsOf(S.archiveCode).find(x => x.key === key); if (g) printPaidStatement(S.archiveCode, g.recs, "كشف دفعة مسددة"); },
   "sel-all": (b, code) => toggleSelAll(code),
   "pay-sel": b => payMany(selRecords(), b),
-  "preview-sel": () => { const r = selRecords(); if (r.length) printReceipt({ no: "", at: Date.now(), paid: r, scope: finScope(), payer: payerLabel(), draft: true }); },
+  "pay-amount": b => payAmount(b),
+  "unpay-rec": (b, c, id) => unpayRecords([S.att.get(id)], b),
+  "unpay-sel": b => unpayRecords([...S.archSel].map(id => S.att.get(id)), b),
+  "cancel-receipt": (b, c, id) => cancelReceipt(id, b),
+  "preview-sel": () => { const r = selRecords(); if (r.length) printReceipt({ no: "", at: Date.now(), paid: r.map(x => ({ ...x, _amt: dueOf(x), _after: 0 })), scope: finScope(), payer: payerLabel(), draft: true }); },
   reprint: (b, c, id) => reprintReceipt(id),
   "del-exam": (b, c, id) => deleteExam(id),
   "img-add": b => { S.upTarget = b.dataset.up; $("#imgFile").click(); },
