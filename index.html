@@ -800,7 +800,12 @@ const { getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, get
 window.__rgReady = true;
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+/* ذاكرة محلية دائمة: تُعرض آخر بيانات محفوظة فوراً حتى لو تعذر الاتصال أو انتهت الحصة اليومية، ولا تُقرأ من الخادم إلا التغييرات */
+let db;
+try {
+  const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } = fbStore;
+  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+} catch (e) { console.warn("persistent cache unavailable", e); db = getFirestore(app); }
 const secondaryAuth = getAuth(initializeApp(firebaseConfig, "SecondaryApp"));
 
 const ADMIN_CODE = "1411", DOMAIN = "@ragabweb.com", CUR = "ر.س";
@@ -934,8 +939,9 @@ const DB_ERR = {
 const onErr = e => {
   console.error(e);
   const code = e && e.code || "unknown", msg = DB_ERR[code] || "تعذر تحميل البيانات من قاعدة البيانات.";
-  toast(msg, "error");
-  document.querySelectorAll(".db-error").forEach(el => { el.hidden = false; el.innerHTML = `<b>⚠️ البيانات لا تظهر</b><span>${msg}</span><small dir="ltr">Firebase: ${String(code).replace(/[<>&"]/g, "")}</small><button type="button" class="btn btn-sm btn-ghost" onclick="location.reload()">إعادة المحاولة</button>`; });
+  const cached = S.studentsReady;
+  if (!cached) toast(msg, "error");
+  document.querySelectorAll(".db-error").forEach(el => { el.hidden = false; el.innerHTML = `<b>${cached ? "ℹ️ تُعرض آخر بيانات محفوظة" : "⚠️ البيانات لا تظهر"}</b><span>${msg}${cached ? " المعروض الآن هو آخر نسخة محفوظة على جهازك وقد لا يشمل أحدث التعديلات." : ""}</span><small dir="ltr">Firebase: ${String(code).replace(/[<>&"]/g, "")}</small><button type="button" class="btn btn-sm btn-ghost" onclick="location.reload()">إعادة المحاولة</button>`; });
 };
 
 /* ================= المصادقة ================= */
@@ -976,6 +982,7 @@ function startAdmin() {
   $("#studentsGrid").innerHTML = '<div class="skel"></div><div class="skel"></div><div class="skel"></div>';
   openTab("add", false); renderWeek(); renderUnread(); renderUp("att");
   openChat("", "#adminChat", true);
+  setTimeout(() => { if (S.role === "admin" && !S.studentsReady) onErr({ code: "unavailable" }); }, 10000);
 
   S.unsubs.push(onSnapshot(collection(db, "students"), snap => {
     S.students.clear();
