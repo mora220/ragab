@@ -804,8 +804,11 @@ const auth = getAuth(app);
 let db;
 try {
   const { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } = fbStore;
-  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
-} catch (e) { console.warn("persistent cache unavailable", e); db = getFirestore(app); }
+  db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }), experimentalAutoDetectLongPolling: true });
+} catch (e) {
+  console.warn("persistent cache unavailable", e);
+  try { db = fbStore.initializeFirestore(app, { experimentalAutoDetectLongPolling: true }); } catch (e2) { db = getFirestore(app); }
+}
 const secondaryAuth = getAuth(initializeApp(firebaseConfig, "SecondaryApp"));
 
 const ADMIN_CODE = "1411", DOMAIN = "@ragabweb.com", CUR = "ر.س";
