@@ -675,6 +675,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
         <div class="btn-row">
           <button type="button" class="btn btn-ghost" data-act="print-record" id="archivePrintBtn"><i class="fa-solid fa-print"></i> طباعة السجل الكامل</button>
           <button type="button" class="btn btn-ghost" data-act="month-report"><i class="fa-solid fa-calendar-check"></i> التقرير الشهري</button>
+          <button type="button" class="btn btn-ghost" data-act="print-statement-arch"><i class="fa-solid fa-file-invoice-dollar"></i> حساب المدفوعات</button>
           <button type="button" class="btn btn-soft-danger" data-act="delete-student"><i class="fa-solid fa-user-xmark"></i> حذف الطالب</button>
         </div>
         <h4 class="sub-title"><i class="fa-solid fa-circle-notch"></i> قيد المتابعة <span class="chip chip-warning" id="archiveActiveCount"></span></h4>
@@ -854,6 +855,22 @@ const partOf = r => r.isPaid ? priceOf(r) : Math.min(priceOf(r), Math.max(0, num
 const dueOf = r => r.isPaid ? 0 : Math.max(0, priceOf(r) - num(r.paidPart));
 const sumDue = list => list.reduce((a, r) => a + dueOf(r), 0);
 const sumPart = list => list.reduce((a, r) => a + partOf(r), 0);
+/* رصيد دائن (دفعة زائدة) محفوظ في ملف الطالب ويُخصم تلقائياً من الحصص الجديدة */
+const creditOf = code => Math.max(0, num(S.students.get(code)?.credit));
+const creditSum = codes => codes.reduce((a, c) => a + creditOf(c), 0);
+function creditHolders(code) {
+  const s = S.students.get(code), sib = s && s.parentCode ? sortedStudents().filter(x => x.parentCode === s.parentCode && x.code !== code).map(x => x.code) : [];
+  return [code, ...sib].filter(c => creditOf(c) > 0);
+}
+async function autoApplyCredit(id, code, price) {
+  if (!(price > 0)) return 0;
+  const batch = writeBatch(db); let need = price, used = 0;
+  for (const h of creditHolders(code)) { if (need <= 0) break; const take = Math.min(need, creditOf(h)); if (take <= 0) continue; need -= take; used += take; batch.update(doc(db, "students", h), { credit: creditOf(h) - take }); }
+  if (!used) return 0;
+  const at = Date.now(), no = "C" + newReceiptNo(), pay = arrayUnion({ no, at, amt: used, cr: true });
+  batch.update(doc(db, "attendance", id), used >= price ? { isPaid: true, paidAt: at, receiptNo: no, paidPart: price, pays: pay } : { paidPart: used, partAt: at, pays: pay });
+  await batch.commit(); return used;
+}
 const sortedStudents = () => [...S.students.values()].sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
 
 /* ================= واجهة عامة: إشعارات/نوافذ ================= */
@@ -1143,7 +1160,7 @@ function renderAttInfo() {
   const c = $("#attStudent").value, el = $("#attInfo");
   if (!c || !S.students.has(c)) { el.innerHTML = ""; return; }
   const recs = recordsOf(c), due = sumDue(recs.filter(isDue)), last = recs[0];
-  el.innerHTML = `<span class="chip chip-muted"><i class="fa-regular fa-calendar"></i> آخر تقييم: ${last ? fmtDate(last.date, { day: "numeric", month: "long" }) : "لا يوجد"}</span><span class="chip ${due ? "chip-warning" : "chip-success"}">الرصيد: ${money(due)} ${CUR}</span>`;
+  el.innerHTML = `<span class="chip chip-muted"><i class="fa-regular fa-calendar"></i> آخر تقييم: ${last ? fmtDate(last.date, { day: "numeric", month: "long" }) : "لا يوجد"}</span><span class="chip ${due ? "chip-warning" : "chip-success"}">الرصيد: ${money(due)} ${CUR}</span>${creditSum([c]) ? `<span class="chip chip-success">رصيد دائن: ${money(creditSum([c]))} ${CUR}</span>` : ""}`;
 }
 $("#attForm").addEventListener("submit", e => { e.preventDefault(); busy($("#attBtn"), saveAttendance, "جاري الاعتماد..."); });
 async function saveAttendance() {
@@ -1157,8 +1174,10 @@ async function saveAttendance() {
   let saved = 0;
   if (imgs.length) saved = await saveImages(ref.id, code, imgs);
   await setDoc(ref, { studentCode: code, date, status, report, isPaid: false, sessionPrice: price, imageCount: saved });
+  let used = 0;
+  if (status === PRESENT) { try { used = await autoApplyCredit(ref.id, code, price); } catch (e) { console.error(e); toast("تم حفظ التقييم، لكن تعذر خصمه من الرصيد الدائن", "error"); } }
   $("#attReport").value = ""; UP.att.items = []; renderUp("att");
-  toast(imgs.length && saved < imgs.length ? "تم حفظ التقييم، لكن تعذر رفع الصور. تحقق من صلاحيات قاعدة البيانات" : "تم حفظ التقييم بنجاح", imgs.length && saved < imgs.length ? "error" : "success"); sfx.ok();
+  toast(imgs.length && saved < imgs.length ? "تم حفظ التقييم، لكن تعذر رفع الصور. تحقق من صلاحيات قاعدة البيانات" : used ? `تم حفظ التقييم واعتماده تلقائياً بخصم ${money(used)} ${CUR} من الرصيد الدائن` : "تم حفظ التقييم بنجاح", imgs.length && saved < imgs.length ? "error" : "success"); sfx.ok();
 }
 
 /* --- اليوميات --- */
@@ -1273,7 +1292,7 @@ const selAllBtn = (code, list) => list.length ? `<button type="button" class="bt
 /* مبلغ إيصال معيّن على حصة: من سجل الدفعات pays، أو الحصة كاملة للإيصالات القديمة */
 function payOf(r, no) {
   const p = Array.isArray(r.pays) ? r.pays.find(x => x.no === no) : null;
-  if (p) return { amt: num(p.amt), at: num(p.at) };
+  if (p) return { amt: num(p.amt), at: num(p.at), cr: !!p.cr };
   if (r.receiptNo === no) return { amt: priceOf(r), at: num(r.paidAt) };
   return null;
 }
@@ -1286,11 +1305,13 @@ function receiptGroups(scope) {
   }
   return groups;
 }
+const ledgerOf = codes => codes.flatMap(c => (S.students.get(c)?.ledger || []).map(l => ({ ...l, code: c })));
 function receiptsHTML() {
-  const groups = receiptGroups(new Set(finScope()));
-  const list = [...groups.entries()].map(([no, ls]) => ({ no, ls, at: Math.max(...ls.map(l => l.at)), amt: ls.reduce((a, l) => a + l.amt, 0) })).sort((a, b) => b.at - a.at).slice(0, 12);
+  const scope = finScope(), groups = receiptGroups(new Set(scope)), led = new Map(ledgerOf(scope).map(l => [l.no, l]));
+  const keys = new Set([...groups.keys(), ...led.keys()]);
+  const list = [...keys].map(no => { const ls = groups.get(no) || [], l = led.get(no), cr = l ? num(l.credit) : 0; return { no, ls, cr, at: Math.max(0, ...ls.map(x => x.at), l ? num(l.at) : 0), amt: ls.reduce((a, x) => a + x.amt, 0) + cr, auto: ls.length && ls.every(x => x.cr) }; }).sort((a, b) => b.at - a.at).slice(0, 12);
   if (!list.length) return "";
-  return `<h4 class="sub-title"><i class="fa-solid fa-receipt"></i> إيصالات الدفع السابقة</h4><div class="stack">${list.map(g => `<div class="due-row"><div><b>إيصال رقم <bdi dir="ltr">${esc(g.no)}</bdi></b><p class="muted small">${g.at ? fmtDate(new Date(g.at)) : ""}، ${money(g.ls.length)} حصة</p></div><div class="due-right"><span class="amount">${money(g.amt)} ${CUR}</span><button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> طباعة</button><button type="button" class="btn btn-sm btn-ghost" style="color:var(--danger)" data-act="cancel-receipt" data-id="${esc(g.no)}"><i class="fa-solid fa-rotate-left"></i> إلغاء</button></div></div>`).join("")}</div>`;
+  return `<h4 class="sub-title"><i class="fa-solid fa-receipt"></i> إيصالات الدفع السابقة</h4><div class="stack">${list.map(g => `<div class="due-row"><div><b>${g.auto ? "خصم من الرصيد" : "إيصال رقم"} <bdi dir="ltr">${esc(g.no)}</bdi></b><p class="muted small">${g.at ? fmtDate(new Date(g.at)) : ""}${g.ls.length ? `، ${money(g.ls.length)} حصة` : ""}${g.cr ? `، رصيد مضاف ${money(g.cr)} ${CUR}` : ""}</p></div><div class="due-right"><span class="amount">${money(g.amt)} ${CUR}</span>${g.auto ? "" : `<button type="button" class="btn btn-sm btn-ghost" data-act="reprint" data-id="${esc(g.no)}"><i class="fa-solid fa-print"></i> طباعة</button>`}<button type="button" class="btn btn-sm btn-ghost" style="color:var(--danger)" data-act="cancel-receipt" data-id="${esc(g.no)}"><i class="fa-solid fa-rotate-left"></i> إلغاء</button></div></div>`).join("")}</div>`;
 }
 function renderSelBar() {
   const bar = $("#selBar"); if (!bar) return;
@@ -1305,21 +1326,21 @@ function renderFinance() {
   if (!f) { box.innerHTML = ""; S.sel.clear(); return; }
   const dueIds = new Set(finScope().flatMap(c => unpaidOf(c).map(r => r.id)));
   [...S.sel].forEach(id => { if (!dueIds.has(id)) S.sel.delete(id); });
-  const hint = dueIds.size ? `<p class="hint" style="margin:-4px 0 10px"><i class="fa-solid fa-circle-info"></i> للدفع الجزئي: حدّد الحصص التي دفعها ولي الأمر، أو اضغط «سداد مبلغ» ليُخصم المبلغ من الحصص الأقدم تلقائياً.</p>` : "";
+  const hint = dueIds.size ? `<p class="hint" style="margin:-4px 0 10px"><i class="fa-solid fa-circle-info"></i> للدفع الجزئي: حدّد الحصص التي دفعها ولي الأمر، أو اضغط «سداد مبلغ» ليُخصم المبلغ من الحصص الأقدم تلقائياً، وأي زيادة تُسجَّل رصيداً دائناً يُخصم من الحصص القادمة.</p>` : "";
   const selBar = `<div class="sel-bar" id="selBar" hidden><span id="selInfo"></span><div class="btn-row"><button type="button" class="btn btn-success" data-act="pay-sel"><i class="fa-solid fa-receipt"></i> اعتماد وطباعة إيصال</button><button type="button" class="btn btn-ghost" data-act="preview-sel"><i class="fa-solid fa-eye"></i> معاينة الإيصال</button></div></div>`;
   if (f.mode === "student") {
     const s = S.students.get(f.code); if (!s) { S.finance = null; box.innerHTML = ""; return; }
     const list = unpaidOf(f.code), total = sumDue(list), c = esc(f.code);
-    box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(list.length)} حصة</span></div>
-      ${list.length ? `<div class="total-actions"><button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button><button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button><button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button></div>` : ""}</div>
+    box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(list.length)} حصة</span>${creditSum([f.code]) ? `<span class="chip chip-success"><i class="fa-solid fa-piggy-bank"></i> لكم رصيد باقٍ ${money(creditSum([f.code]))} ${CUR}</span>` : ""}</div>
+      <div class="total-actions">${list.length ? `<button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button>` : ""}<button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button>${list.length ? `<button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button>` : ""}<button type="button" class="btn btn-ghost" data-act="print-statement"><i class="fa-solid fa-file-invoice-dollar"></i> حساب شامل للمدفوعات</button></div></div>
       <div class="kid-block-head" style="margin-top:20px"><h4 class="sub-title" style="margin:0"><i class="fa-solid fa-clock-rotate-left"></i> الحصص غير المعتمدة</h4>${selAllBtn(f.code, list)}</div>
       ${hint}${list.length ? `<div class="stack">${list.map(dueRow).join("")}</div>` : empty("fa-face-smile", "رصيد الطالب مكتمل، لا توجد حصص معلّقة", "success")}
       ${receiptsHTML()}${selBar}`;
   } else {
     const kids = parentData(f.code); if (!kids.length) { S.finance = null; box.innerHTML = ""; return; }
     const total = kids.reduce((a, k) => a + k.totalDue, 0), count = kids.reduce((a, k) => a + k.unpaid.length, 0);
-    box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">الرصيد الإجمالي لولي الأمر (${esc(f.code)})</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(count)} حصة، ${money(kids.length)} أبناء</span></div>
-      <div class="total-actions">${total ? `<button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button>` : ""}<button type="button" class="btn btn-ghost" data-act="print-parent" data-code="${esc(f.code)}"><i class="fa-solid fa-print"></i> التقرير الشامل</button></div></div>
+    box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">الرصيد الإجمالي لولي الأمر (${esc(f.code)})</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(count)} حصة، ${money(kids.length)} أبناء</span>${creditSum(finScope()) ? `<span class="chip chip-success"><i class="fa-solid fa-piggy-bank"></i> لكم رصيد باقٍ ${money(creditSum(finScope()))} ${CUR}</span>` : ""}</div>
+      <div class="total-actions"><button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button><button type="button" class="btn btn-ghost" data-act="print-statement"><i class="fa-solid fa-file-invoice-dollar"></i> حساب شامل للمدفوعات</button><button type="button" class="btn btn-ghost" data-act="print-parent" data-code="${esc(f.code)}"><i class="fa-solid fa-print"></i> التقرير الشامل</button></div></div>
       <div style="margin-top:16px">${hint}</div>
       ${kids.map(k => `<div class="kid-block"><div class="kid-block-head"><h4><i class="fa-solid fa-user-graduate"></i> ${esc(k.name)}</h4>
         <div class="btn-row" style="flex:0"><span class="chip ${k.totalDue ? "chip-warning" : "chip-success"}">${money(k.totalDue)} ${CUR}، ${money(k.unpaid.length)} حصة</span>
@@ -1351,40 +1372,40 @@ async function payMany(records, b) {
   const at = await askPayDate(records.length, total); if (!at) return;
   await commitPay(records.map(r => ({ r, amt: dueOf(r), full: true, after: 0 })), at, b);
 }
-/* تنفيذ دفعة: lines = [{r, amt, full, after}] */
-async function commitPay(lines, at, b) {
+/* تنفيذ دفعة: lines = [{r, amt, full, after}] ، creditAdd = زيادة عن المستحق تُسجَّل رصيداً */
+async function commitPay(lines, at, b, creditAdd = 0) {
   const no = newReceiptNo(), scope = finScope(), payer = payerLabel();
-  const snap = lines.map(l => ({ ...l.r, _amt: l.amt, _after: l.after })), total = lines.reduce((a, l) => a + l.amt, 0);
+  const snap = lines.map(l => ({ ...l.r, _amt: l.amt, _after: l.after })), applied = lines.reduce((a, l) => a + l.amt, 0);
+  const owner = lines.length ? lines[lines.length - 1].r.studentCode : scope[0], creditAfter = creditSum(scope) + creditAdd;
+  const ops = lines.map(l => [doc(db, "attendance", l.r.id), l.full
+    ? { isPaid: true, paidAt: at, receiptNo: no, paidPart: priceOf(l.r), pays: arrayUnion({ no, at, amt: l.amt }) }
+    : { paidPart: partOf(l.r) + l.amt, partAt: at, pays: arrayUnion({ no, at, amt: l.amt }) }]);
+  if (creditAdd > 0) ops.push([doc(db, "students", owner), { credit: creditOf(owner) + creditAdd, ledger: arrayUnion({ no, at, amt: applied + creditAdd, credit: creditAdd }) }]);
   const ok = await busy(b, async () => {
-    for (let i = 0; i < lines.length; i += 450) {
-      const batch = writeBatch(db);
-      lines.slice(i, i + 450).forEach(l => batch.update(doc(db, "attendance", l.r.id), l.full
-        ? { isPaid: true, paidAt: at, receiptNo: no, paidPart: priceOf(l.r), pays: arrayUnion({ no, at, amt: l.amt }) }
-        : { paidPart: partOf(l.r) + l.amt, partAt: at, pays: arrayUnion({ no, at, amt: l.amt }) }));
-      await batch.commit();
-    }
+    for (let i = 0; i < ops.length; i += 450) { const batch = writeBatch(db); ops.slice(i, i + 450).forEach(([r, d]) => batch.update(r, d)); await batch.commit(); }
     return true;
   }, "جاري الاعتماد...");
   if (!ok) return;
   lines.forEach(l => S.sel.delete(l.r.id));
   toast(`تم تسجيل السداد، إيصال رقم \u2066${no}\u2069`, "success"); sfx.ok();
   const part = lines.filter(l => !l.full).length;
-  if (await confirmBox(`تم تسجيل ${money(total)} ${CUR} بتاريخ ${fmtDate(new Date(at))}، ${money(lines.length - part)} حصة مكتملة${part ? ` وحصة واحدة بسداد جزئي` : ""}. هل تريد طباعة إيصال الدفع الآن؟`, { ok: "طباعة الإيصال", title: "إيصال الدفع" }))
-    printReceipt({ no, at, paid: snap, scope, payer });
+  const msg = `تم تسجيل ${money(applied + creditAdd)} ${CUR} بتاريخ ${fmtDate(new Date(at))}${lines.length ? `، ${money(lines.length - part)} حصة مكتملة${part ? " وحصة واحدة بسداد جزئي" : ""}` : ""}${creditAdd ? `. تبقى ${money(creditAdd)} ${CUR} رصيداً لكم يُخصم تلقائياً من الحصص القادمة` : ""}. هل تريد طباعة إيصال الدفع الآن؟`;
+  if (await confirmBox(msg, { ok: "طباعة الإيصال", title: "إيصال الدفع" }))
+    printReceipt({ no, at, paid: snap, scope, payer, credit: creditAdd, creditAfter });
 }
-/* توزيع مبلغ على الحصص الأقدم أولاً */
+/* توزيع مبلغ على الحصص الأقدم أولاً، وما زاد يصبح رصيداً */
 function allocate(codes, amount) {
   const list = codes.flatMap(c => unpaidOf(c)).sort((a, b) => parseDate(a.date) - parseDate(b.date));
   let left = amount; const lines = [];
   for (const r of list) { if (left <= 0) break; const d = dueOf(r), amt = Math.min(d, left); lines.push({ r, amt, full: amt >= d, after: d - amt }); left -= amt; }
-  return lines;
+  return { lines, credit: Math.round(left * 100) / 100 };
 }
 function askPayAmount(codes, total) {
   return new Promise(res => {
     openModal({
       title: '<i class="fa-solid fa-coins"></i> سداد مبلغ من الحساب',
-      html: `<p class="confirm-text">الرصيد المستحق: <b class="money">${money(total)} ${CUR}</b>. سيُخصم المبلغ من أقدم الحصص أولاً، وإن بقي جزء من حصة يُسجَّل كسداد جزئي.</p>
-        <div class="grid-2" style="margin-top:14px"><div class="field"><label for="payAmt">المبلغ المسدد (${CUR})</label><input type="number" id="payAmt" class="input" min="1" max="${total}" inputmode="decimal" placeholder="مثال: 1000"></div>
+      html: `<p class="confirm-text">${total ? `الرصيد المستحق: <b class="money">${money(total)} ${CUR}</b>. ` : "لا توجد حصص مستحقة حالياً. "}سيُخصم المبلغ من أقدم الحصص أولاً، وإن بقي جزء من حصة يُسجَّل كسداد جزئي. وإذا زاد المبلغ عن المستحق تُسجَّل الزيادة <b>رصيداً دائناً</b> يُخصم تلقائياً من الحصص القادمة.</p>
+        <div class="grid-2" style="margin-top:14px"><div class="field"><label for="payAmt">المبلغ المسدد (${CUR})</label><input type="number" id="payAmt" class="input" min="1" inputmode="decimal" placeholder="مثال: 1000"></div>
         <div class="field"><label for="payDate">تاريخ السداد</label><input type="date" id="payDate" class="input" value="${todayISO()}" max="${todayISO()}"></div></div>
         <div id="payPrev" class="hint" style="margin-top:8px"></div>`,
       onClose: () => res(null),
@@ -1392,7 +1413,6 @@ function askPayAmount(codes, total) {
         { label: '<i class="fa-solid fa-check"></i> اعتماد السداد', cls: "btn-success", onClick: () => {
           const amt = num($("#payAmt").value), v = $("#payDate").value;
           if (!(amt > 0)) return toast("أدخل مبلغاً صحيحاً", "error");
-          if (amt > total) return toast(`المبلغ أكبر من الرصيد المستحق (${money(total)} ${CUR})`, "error");
           if (!v) return toast("اختر تاريخ السداد", "error");
           const at = v === todayISO() ? Date.now() : parseDate(v).getTime() + 12 * 3600e3;
           S.onModalClose = null; closeModal(); res({ amount: amt, at });
@@ -1403,27 +1423,29 @@ function askPayAmount(codes, total) {
     $("#payAmt").addEventListener("input", () => {
       const amt = num($("#payAmt").value), box = $("#payPrev");
       if (!(amt > 0)) { box.textContent = ""; return; }
-      if (amt > total) { box.textContent = "المبلغ أكبر من الرصيد المستحق"; return; }
-      const ls = allocate(codes, amt), part = ls.filter(l => !l.full)[0], full = ls.filter(l => l.full).length;
-      box.innerHTML = `سيُسدَّد <b>${money(full)}</b> حصة كاملة${part ? ` وجزء من حصة ${fmtDate(part.r.date)} (يتبقى ${money(part.after)} ${CUR})` : ""}، والمتبقي من الحساب <b>${money(total - amt)} ${CUR}</b>.`;
+      const { lines, credit } = allocate(codes, amt), part = lines.filter(l => !l.full)[0], full = lines.filter(l => l.full).length;
+      box.innerHTML = `${lines.length ? `سيُسدَّد <b>${money(full)}</b> حصة كاملة${part ? ` وجزء من حصة ${fmtDate(part.r.date)} (يتبقى ${money(part.after)} ${CUR})` : ""}` : "لا حصص لخصمها"}${credit ? `، والزيادة <b>${money(credit)} ${CUR}</b> تُسجَّل رصيداً دائناً` : `، والمتبقي من الحساب <b>${money(Math.max(0, total - amt))} ${CUR}</b>`}.`;
     });
   });
 }
 async function payAmount(b) {
   const codes = finScope(), total = sumDue(codes.flatMap(c => unpaidOf(c)));
-  if (!total) return toast("لا يوجد رصيد مستحق", "info");
   const x = await askPayAmount(codes, total); if (!x) return;
-  const lines = allocate(codes, x.amount); if (!lines.length) return;
-  await commitPay(lines, x.at, b);
+  const { lines, credit } = allocate(codes, x.amount); if (!lines.length && !credit) return;
+  await commitPay(lines, x.at, b, credit);
 }
 /* إلغاء اعتماد حصص (خطأ في الاعتماد): تعود غير مسددة بالكامل */
 const resetPay = { isPaid: false, paidAt: null, receiptNo: null, paidPart: 0, partAt: null, pays: [] };
 async function unpayRecords(records, b) {
   records = records.filter(r => r && (r.isPaid || num(r.paidPart) > 0)); if (!records.length) return;
-  const amt = sumPart(records);
-  if (!(await confirmBox(`سيتم إلغاء اعتماد ${money(records.length)} حصة (مسدد منها ${money(amt)} ${CUR}) وتعود إلى الحصص غير المسددة. هل أنت متأكد؟`, { ok: "إلغاء الاعتماد", danger: true, title: "إلغاء اعتماد السداد" }))) return;
+  const amt = sumPart(records), back = {};
+  records.forEach(r => (Array.isArray(r.pays) ? r.pays : []).forEach(p => { if (p.cr) back[r.studentCode] = (back[r.studentCode] || 0) + num(p.amt); }));
+  const backTotal = Object.values(back).reduce((a, v) => a + v, 0);
+  if (!(await confirmBox(`سيتم إلغاء اعتماد ${money(records.length)} حصة (مسدد منها ${money(amt)} ${CUR}) وتعود إلى الحصص غير المسددة.${backTotal ? ` وسيعود ${money(backTotal)} ${CUR} منها إلى الرصيد الدائن.` : ""} هل أنت متأكد؟`, { ok: "إلغاء الاعتماد", danger: true, title: "إلغاء اعتماد السداد" }))) return;
   const ok = await busy(b, async () => {
-    for (let i = 0; i < records.length; i += 450) { const batch = writeBatch(db); records.slice(i, i + 450).forEach(r => batch.update(doc(db, "attendance", r.id), resetPay)); await batch.commit(); }
+    const ops = records.map(r => [doc(db, "attendance", r.id), resetPay]);
+    Object.entries(back).forEach(([c, v]) => ops.push([doc(db, "students", c), { credit: creditOf(c) + v }]));
+    for (let i = 0; i < ops.length; i += 450) { const batch = writeBatch(db); ops.slice(i, i + 450).forEach(([r, d]) => batch.update(r, d)); await batch.commit(); }
     return true;
   }, "جاري الإلغاء...");
   if (!ok) return;
@@ -1432,20 +1454,27 @@ async function unpayRecords(records, b) {
 }
 /* إلغاء إيصال كامل: يُخصم مبلغه من الحصص ويبقى ما سُدد بإيصالات أخرى */
 async function cancelReceipt(no, b) {
-  const ls = receiptGroups(new Set(finScope())).get(no); if (!ls || !ls.length) return;
-  const total = ls.reduce((a, l) => a + l.amt, 0);
-  if (!(await confirmBox(`سيتم إلغاء الإيصال رقم ${no} بقيمة ${money(total)} ${CUR} (${money(ls.length)} حصة) وتعود المبالغ إلى الرصيد المستحق. هل أنت متأكد؟`, { ok: "إلغاء الإيصال", danger: true, title: "إلغاء إيصال" }))) return;
+  const scope = new Set(finScope()), ls = receiptGroups(scope).get(no) || [], led = ledgerOf([...scope]).filter(l => l.no === no);
+  if (!ls.length && !led.length) return;
+  const crAdd = led.reduce((a, l) => a + num(l.credit), 0), total = ls.reduce((a, l) => a + l.amt, 0) + crAdd;
+  if (!(await confirmBox(`سيتم إلغاء الإيصال رقم ${no} بقيمة ${money(total)} ${CUR}${ls.length ? ` (${money(ls.length)} حصة)` : ""} وتعود المبالغ إلى الرصيد المستحق${crAdd ? ` ويُخصم ${money(crAdd)} ${CUR} من الرصيد الدائن` : ""}. هل أنت متأكد؟`, { ok: "إلغاء الإيصال", danger: true, title: "إلغاء إيصال" }))) return;
   const ok = await busy(b, async () => {
-    for (let i = 0; i < ls.length; i += 450) {
-      const batch = writeBatch(db);
-      ls.slice(i, i + 450).forEach(({ r }) => {
-        const has = Array.isArray(r.pays) && r.pays.some(x => x.no === no);
-        if (!has) { batch.update(doc(db, "attendance", r.id), resetPay); return; }
-        const pays = r.pays.filter(x => x.no !== no), part = pays.reduce((a, x) => a + num(x.amt), 0), full = part > 0 && part >= priceOf(r), last = pays[pays.length - 1];
-        batch.update(doc(db, "attendance", r.id), { pays, paidPart: full ? priceOf(r) : part, isPaid: full, paidAt: full && last ? last.at : null, receiptNo: full && last ? last.no : null, partAt: !full && last ? last.at : null });
-      });
-      await batch.commit();
-    }
+    const ops = [], delta = {};
+    ls.forEach(({ r }) => {
+      const has = Array.isArray(r.pays) && r.pays.some(x => x.no === no);
+      if (!has) { ops.push([doc(db, "attendance", r.id), resetPay]); return; }
+      const gone = r.pays.filter(x => x.no === no);
+      gone.forEach(x => { if (x.cr) delta[r.studentCode] = (delta[r.studentCode] || 0) + num(x.amt); });
+      const pays = r.pays.filter(x => x.no !== no), part = pays.reduce((a, x) => a + num(x.amt), 0), full = part > 0 && part >= priceOf(r), last = pays[pays.length - 1];
+      ops.push([doc(db, "attendance", r.id), { pays, paidPart: full ? priceOf(r) : part, isPaid: full, paidAt: full && last ? last.at : null, receiptNo: full && last ? last.no : null, partAt: !full && last ? last.at : null }]);
+    });
+    led.forEach(l => { delta[l.code] = (delta[l.code] || 0) - num(l.credit); });
+    new Set([...Object.keys(delta), ...led.map(l => l.code)]).forEach(c => {
+      const d = { credit: Math.max(0, creditOf(c) + (delta[c] || 0)) };
+      if (led.some(l => l.code === c)) d.ledger = (S.students.get(c).ledger || []).filter(x => x.no !== no);
+      ops.push([doc(db, "students", c), d]);
+    });
+    for (let i = 0; i < ops.length; i += 450) { const batch = writeBatch(db); ops.slice(i, i + 450).forEach(([r, d]) => batch.update(r, d)); await batch.commit(); }
     return true;
   }, "جاري الإلغاء...");
   if (ok) toast("تم إلغاء الإيصال", "success");
@@ -1470,14 +1499,15 @@ function askPayDate(count, total) {
 }
 function selRecords() { return [...S.sel].map(id => S.att.get(id)).filter(Boolean); }
 function reprintReceipt(no) {
-  const ls = [...receiptGroups(new Set(S.students.keys())).get(no) || []]; if (!ls.length) return;
-  const codes = [...new Set(ls.map(l => l.r.studentCode))], pc = S.students.get(codes[0])?.parentCode;
+  const ls = [...receiptGroups(new Set(S.students.keys())).get(no) || []], led = ledgerOf([...S.students.keys()]).find(l => l.no === no);
+  if (!ls.length && !led) return;
+  const codes = ls.length ? [...new Set(ls.map(l => l.r.studentCode))] : [led.code], pc = S.students.get(codes[0])?.parentCode;
   const payer = codes.length > 1 && pc ? `ولي الأمر (${pc})` : `ولي أمر الطالب ${studentName(codes[0])}`;
   const scope = codes.length > 1 && pc ? sortedStudents().filter(x => x.parentCode === pc).map(x => x.code) : codes;
-  printReceipt({ no, at: Math.max(...ls.map(l => l.at)), paid: ls.map(l => ({ ...l.r, _amt: l.amt })), scope, payer, reprint: true });
+  printReceipt({ no, at: Math.max(0, ...ls.map(l => l.at), led ? num(led.at) : 0), paid: ls.map(l => ({ ...l.r, _amt: l.amt })), scope, payer, reprint: true, credit: led ? num(led.credit) : 0, creditAfter: creditSum(scope) });
 }
 const recAmt = r => r._amt !== undefined ? r._amt : priceOf(r);
-function printReceipt({ no, at, paid, scope, payer, draft = false, reprint = false }) {
+function printReceipt({ no, at, paid, scope, payer, draft = false, reprint = false, credit = 0, creditAfter = 0 }) {
   const paidMap = new Map(paid.map(r => [r.id, r]));
   const remaining = scope.flatMap(c => unpaidOf(c)).map(r => { const p = paidMap.get(r.id), d = p && p._after !== undefined ? p._after : dueOf(r); return d > 0 ? { ...r, _amt: d, _rest: d < priceOf(r) } : null; }).filter(Boolean).sort((a, b) => parseDate(a.date) - parseDate(b.date));
   const multi = new Set([...paid, ...remaining].map(r => r.studentCode)).size > 1;
@@ -1486,16 +1516,44 @@ function printReceipt({ no, at, paid, scope, payer, draft = false, reprint = fal
   const head = `<tr>${multi ? "<th>الطالب</th>" : ""}<th>تاريخ الحصة</th><th style="width:22%">القيمة</th></tr>`;
   const row = r => `<tr>${multi ? `<td>${esc(studentName(r.studentCode))}</td>` : ""}<td>${fmtDate(r.date)}${r._rest ? " <small>(الجزء المتبقي من الحصة)</small>" : recAmt(r) < priceOf(r) ? ` <small>(دفعة جزئية من ${money(priceOf(r))} ${CUR})</small>` : ""}</td><td class="p-num">${money(recAmt(r))} ${CUR}</td></tr>`;
   const cols = multi ? 2 : 1;
-  const names = [...new Set(paid.map(r => studentName(r.studentCode)))].join("، ");
+  const names = [...new Set((paid.length ? paid.map(r => r.studentCode) : scope).map(c => studentName(c)))].join("، ");
   printDoc(`إيصال دفع ${no}`, printHeader(draft ? "معاينة إيصال دفع (غير معتمد)" : "إيصال دفع حصص دراسية") +
     `<div class="p-meta"><span>رقم الإيصال: <b dir="ltr">${draft ? "-" : esc(no)}</b></span><span>تاريخ الدفع: <b>${fmtDate(new Date(at || Date.now()))}</b></span></div>
      <div class="p-meta"><span>الطالب: <b>${esc(names)}</b></span><span>${esc(payer)}</span></div>
-     <div class="p-sum"><div><span>المبلغ المدفوع</span><b>${money(pTotal)} ${CUR}</b><small>${money(paid.length)} حصة</small></div><div class="${rTotal ? "rem" : "done"}"><span>المتبقي</span><b>${money(rTotal)} ${CUR}</b><small>${money(remaining.length)} حصة</small></div></div>
-     <h3 class="p-sec">✓ الحصص المدفوعة في هذا الإيصال</h3>
-     <table class="p-table"><thead>${head}</thead><tbody>${paidSorted.map(row).join("")}</tbody><tfoot><tr><td colspan="${cols}">إجمالي المدفوع</td><td class="p-num">${money(pTotal)} ${CUR}</td></tr></tfoot></table>
+     <div class="p-sum"><div><span>${credit ? "المبلغ المستلم" : "المبلغ المدفوع"}</span><b>${money(pTotal + credit)} ${CUR}</b><small>${money(paid.length)} حصة${credit ? `، ومنه رصيد ${money(credit)} ${CUR}` : ""}</small></div><div class="${rTotal ? "rem" : "done"}"><span>المتبقي</span><b>${money(rTotal)} ${CUR}</b><small>${money(remaining.length)} حصة</small></div></div>
+     ${creditAfter > 0 ? `<div class="p-total" style="margin-bottom:10px">لكم رصيد باقٍ: ${money(creditAfter)} ${CUR}، يُخصم تلقائياً من الحصص القادمة</div>` : ""}
+     ${paid.length ? `<h3 class="p-sec">✓ الحصص المدفوعة في هذا الإيصال</h3>
+     <table class="p-table"><thead>${head}</thead><tbody>${paidSorted.map(row).join("")}</tbody><tfoot><tr><td colspan="${cols}">إجمالي المخصوم على الحصص</td><td class="p-num">${money(pTotal)} ${CUR}</td></tr></tfoot></table>` : ""}
      <h3 class="p-sec">الحصص المتبقية غير المسددة${reprint ? " (حتى تاريخ الطباعة)" : ""}</h3>
      ${remaining.length ? `<table class="p-table p-rem"><thead>${head}</thead><tbody>${remaining.map(row).join("")}</tbody><tfoot><tr><td colspan="${cols}">إجمالي المتبقي</td><td class="p-num">${money(rTotal)} ${CUR}</td></tr></tfoot></table>` : `<p class="p-ok" style="text-align:center;padding:10px">لا توجد حصص متبقية، الرصيد مكتمل ✨</p>`}
      <div class="p-sign"><div><span>توقيع المعلم</span><i></i></div><div><span>توقيع ولي الأمر</span><i></i></div></div>`);
+}
+
+/* --- كشف شامل لكل المدفوعات السابقة --- */
+function statementRows(codes) {
+  const set = new Set(codes), rows = new Map();
+  const row = (key, at, no) => { if (!rows.has(key)) rows.set(key, { key, at: 0, no, applied: 0, credit: 0, cr: false, n: 0 }); const x = rows.get(key); x.at = Math.max(x.at, at); return x; };
+  for (const r of S.att.values()) {
+    if (!set.has(r.studentCode) || r.status !== PRESENT) continue;
+    const pays = Array.isArray(r.pays) && r.pays.length ? r.pays : (r.isPaid && (r.receiptNo || r.paidAt) ? [{ no: r.receiptNo || "", at: r.paidAt, amt: priceOf(r) }] : []);
+    for (const p of pays) { const at = num(p.at), x = row(p.no ? "R:" + p.no : "D:" + isoDate(new Date(at)), at, p.no || ""); x.applied += num(p.amt); x.n++; if (p.cr) x.cr = true; }
+  }
+  ledgerOf(codes).forEach(l => { const x = row("R:" + l.no, num(l.at), l.no); x.credit += num(l.credit); });
+  return [...rows.values()].sort((a, b) => a.at - b.at);
+}
+function printAllPayments(codes) {
+  codes = codes.filter(c => S.students.has(c)); if (!codes.length) return;
+  const rows = statementRows(codes), names = codes.map(studentName).join("، ");
+  const received = rows.filter(x => !x.cr).reduce((a, x) => a + x.applied + x.credit, 0), fromCredit = rows.filter(x => x.cr).reduce((a, x) => a + x.applied, 0);
+  const due = sumDue(codes.flatMap(c => unpaidOf(c))), credit = creditSum(codes);
+  const d = at => at ? fmtDate(new Date(at), { day: "numeric", month: "numeric", year: "numeric" }) : "غير مسجل";
+  printDoc(`كشف شامل للمدفوعات - ${names}`, printHeader("كشف حساب شامل للمدفوعات") +
+    `<div class="p-meta"><span>${codes.length > 1 ? "الأبناء" : "الطالب"}: <b>${esc(names)}</b></span><span>تاريخ الإصدار: <b>${fmtDate(new Date())}</b></span></div>
+     <div class="p-sum"><div><span>إجمالي المبالغ المستلمة</span><b>${money(received)} ${CUR}</b><small>${money(rows.filter(x => !x.cr).length)} دفعة</small></div><div class="${due ? "rem" : "done"}"><span>المتبقي المستحق</span><b>${money(due)} ${CUR}</b><small>${money(codes.flatMap(c => unpaidOf(c)).length)} حصة</small></div></div>
+     ${credit > 0 ? `<div class="p-total" style="margin-bottom:10px">لكم رصيد باقٍ: ${money(credit)} ${CUR}، يُخصم تلقائياً من الحصص القادمة</div>` : ""}
+     <table class="p-table"><thead><tr><th style="width:20%">التاريخ</th><th style="width:22%">رقم الإيصال</th><th>البيان</th><th style="width:20%">المبلغ</th></tr></thead>
+     <tbody>${rows.map(x => `<tr><td>${d(x.at)}</td><td dir="ltr" style="text-align:right;white-space:nowrap">${esc(x.no || "-")}</td><td>${x.cr ? "خصم تلقائي من الرصيد الدائن" : `${money(x.n)} حصة${x.credit ? `، ورصيد مضاف ${money(x.credit)} ${CUR}` : ""}`}</td><td class="p-num">${x.cr ? "(" + money(x.applied) + ")" : money(x.applied + x.credit)} ${CUR}</td></tr>`).join("") || `<tr><td colspan="4">لا توجد مدفوعات مسجلة</td></tr>`}</tbody>
+     <tfoot><tr><td colspan="3">إجمالي المبالغ المستلمة</td><td class="p-num">${money(received)} ${CUR}</td></tr>${fromCredit ? `<tr class="p-sub"><td colspan="3">منها مخصوم تلقائياً من الرصيد الدائن (غير مضاف للإجمالي)</td><td class="p-num">${money(fromCredit)} ${CUR}</td></tr>` : ""}<tr class="p-sub"><td colspan="3">المتبقي المستحق</td><td class="p-num">${money(due)} ${CUR}</td></tr></tfoot></table>`);
 }
 
 /* --- الأرشيف --- */
@@ -1506,7 +1564,7 @@ function renderArchive() {
   const recs = recordsOf(s.code), active = recs.filter(r => !r.isPaid), done = recs.filter(r => r.isPaid);
   const present = recs.filter(r => r.status === PRESENT).length, due = sumDue(recs.filter(isDue));
   $("#archivePrintBtn").dataset.code = s.code;
-  $("#archiveSummary").innerHTML = `<div class="mini"><span>إجمالي التقييمات</span><b>${money(recs.length)}</b></div><div class="mini"><span>الحضور</span><b style="color:var(--success)">${money(present)}</b></div><div class="mini"><span>الغياب</span><b style="color:var(--danger)">${money(recs.length - present)}</b></div><div class="mini"><span>الرصيد المتبقي</span><b style="color:var(--warning)">${money(due)} <small>${CUR}</small></b></div>`;
+  $("#archiveSummary").innerHTML = `<div class="mini"><span>إجمالي التقييمات</span><b>${money(recs.length)}</b></div><div class="mini"><span>الحضور</span><b style="color:var(--success)">${money(present)}</b></div><div class="mini"><span>الغياب</span><b style="color:var(--danger)">${money(recs.length - present)}</b></div><div class="mini"><span>الرصيد المتبقي</span><b style="color:var(--warning)">${money(due)} <small>${CUR}</small></b></div>${creditOf(s.code) ? `<div class="mini"><span>رصيد دائن</span><b style="color:var(--success)">${money(creditOf(s.code))} <small>${CUR}</small></b></div>` : ""}`;
   $("#archiveActiveCount").textContent = money(active.length); $("#archiveDoneCount").textContent = money(done.length);
   $("#archiveActive").innerHTML = active.length ? active.map(r => recordCard(r, { actions: true })).join("") : empty("fa-inbox", "لا توجد سجلات قيد المتابعة");
   const shown = archDoneShown(done);
@@ -1696,7 +1754,7 @@ function renderStudentView() {
 function showWallet() {
   const s = S.students.get(S.currentKid); if (!s) return;
   const due = unpaidOf(s.code), dueTotal = sumDue(due);
-  let html = `<div class="total-card ${dueTotal ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(dueTotal)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(due.length)} حصة غير معتمدة</span></div></div>`;
+  let html = `<div class="total-card ${dueTotal ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(dueTotal)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(due.length)} حصة غير معتمدة</span>${creditOf(s.code) ? `<span class="chip chip-success"><i class="fa-solid fa-piggy-bank"></i> لكم رصيد باقٍ ${money(creditOf(s.code))} ${CUR}</span>` : ""}</div></div>`;
   html += due.length
     ? `<h4 class="sub-title"><i class="fa-regular fa-calendar"></i> تواريخ الحصص</h4><div class="stack">${due.map(r => `<div class="due-row"><b>${fmtDate(r.date, { weekday: "long", day: "numeric", month: "long" })}</b><span class="amount">${money(dueOf(r))} ${CUR}</span></div>`).join("")}</div>`
     : `<div style="margin-top:14px">${empty("fa-shield-heart", "الرصيد مكتمل 🌟 شكراً لكم", "success")}</div>`;
@@ -1708,6 +1766,7 @@ function showWallet() {
   const acts = [];
   if (S.isParent) acts.push({ label: '<i class="fa-solid fa-print"></i> التقرير الشامل', cls: "btn-success", onClick: () => { closeModal(); printParentReport(S.parentCode); } });
   else if (due.length) acts.push({ label: '<i class="fa-solid fa-print"></i> كشف الحساب', cls: "btn-success", onClick: () => { closeModal(); printStudentInvoice(s.code); } });
+  acts.push({ label: '<i class="fa-solid fa-file-invoice-dollar"></i> كشف المدفوعات', cls: "btn-ghost", onClick: () => { closeModal(); printAllPayments(S.isParent ? parentData(S.parentCode).map(k => k.code) : [s.code]); } });
   acts.push({ label: "إغلاق", cls: "btn-ghost", onClick: () => closeModal() });
   openModal({ title: '<i class="fa-solid fa-wallet"></i> الحساب المالي', html, actions: acts, onClose: () => { S.walletOpen = false; } });
 }
@@ -1923,6 +1982,8 @@ const ACTIONS = {
   "sel-all": (b, code) => toggleSelAll(code),
   "pay-sel": b => payMany(selRecords(), b),
   "pay-amount": b => payAmount(b),
+  "print-statement": () => printAllPayments(finScope()),
+  "print-statement-arch": () => printAllPayments([S.archiveCode]),
   "unpay-rec": (b, c, id) => unpayRecords([S.att.get(id)], b),
   "unpay-sel": b => unpayRecords([...S.archSel].map(id => S.att.get(id)), b),
   "cancel-receipt": (b, c, id) => cancelReceipt(id, b),
