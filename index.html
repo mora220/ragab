@@ -676,6 +676,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
           <button type="button" class="btn btn-ghost" data-act="print-record" id="archivePrintBtn"><i class="fa-solid fa-print"></i> طباعة السجل الكامل</button>
           <button type="button" class="btn btn-ghost" data-act="month-report"><i class="fa-solid fa-calendar-check"></i> التقرير الشهري</button>
           <button type="button" class="btn btn-ghost" data-act="print-statement-arch"><i class="fa-solid fa-file-invoice-dollar"></i> حساب المدفوعات</button>
+          <button type="button" class="btn btn-soft-danger" data-act="wipe-records"><i class="fa-solid fa-eraser"></i> مسح كل السجلات</button>
           <button type="button" class="btn btn-soft-danger" data-act="delete-student"><i class="fa-solid fa-user-xmark"></i> حذف الطالب</button>
         </div>
         <h4 class="sub-title"><i class="fa-solid fa-circle-notch"></i> قيد المتابعة <span class="chip chip-warning" id="archiveActiveCount"></span></h4>
@@ -1147,6 +1148,8 @@ async function saveStudent() {
     toast("تم تحديث البيانات بنجاح", "success"); sfx.ok(); resetStudentForm(); openTab("list");
   } else {
     if (S.students.has(code)) return toast("هذا الكود مستخدم لطالب آخر", "error");
+    const old = [...S.att.values()].filter(r => r.studentCode === code).length;
+    if (old && await confirmBox(`يوجد ${money(old)} سجل قديم مرتبط بهذا الكود من طالب سابق. هل تريد حذفها حتى يبدأ الطالب الجديد من الصفر؟ (إلغاء = إبقاؤها)`, { ok: "حذف القديم", title: "سجلات قديمة بنفس الكود" })) await wipeStudentData(code);
     await ensureAccount(code, pass);
     if (pCode && pPass) await ensureAccount(pCode, pPass);
     await setDoc(doc(db, "students", code), { name, code, parentCode: pCode, parentPass: pPass, price: num(price), password: pass, lastActive: null });
@@ -1626,11 +1629,26 @@ function printPaidStatement(code, recs, title = "كشف حساب الحصص ال
      <tbody>${list.map(r => `<tr><td>${fmtDate(r.date)}</td><td class="p-num">${money(priceOf(r))} ${CUR}</td><td>${r.paidAt ? fmtDate(new Date(num(r.paidAt)), { day: "numeric", month: "numeric", year: "numeric" }) : "غير مسجل"}</td><td dir="ltr" style="text-align:right;white-space:nowrap">${esc(r.receiptNo || "-")}</td></tr>`).join("")}</tbody>
      <tfoot><tr><td>الإجمالي المسدد</td><td class="p-num" colspan="3">${money(total)} ${CUR}</td></tr></tfoot></table>`);
 }
+/* مسح كل بيانات طالب (الحصص وصور التقارير والمحادثة) حتى لا تظهر لطالب جديد بنفس الكود */
+async function wipeStudentData(code) {
+  const items = [...S.att.values()].filter(r => r.studentCode === code).map(r => ["attendance", r.id]);
+  for (const col of ["reportImages", "messages"]) { const q = await getDocs(query(collection(db, col), where("studentCode", "==", code))); q.forEach(d => items.push([col, d.id])); }
+  for (let i = 0; i < items.length; i += 450) { const batch = writeBatch(db); items.slice(i, i + 450).forEach(([c, id]) => batch.delete(doc(db, c, id))); await batch.commit(); }
+  items.forEach(([c, id]) => { if (c === "attendance") S.att.delete(id); });
+  S.imgCache?.clear();
+  return items.length;
+}
 async function deleteStudent() {
   const s = S.students.get(S.archiveCode); if (!s) return;
   const n = recordsOf(s.code).length;
-  if (!(await confirmBox(`سيتم حذف ملف الطالب "${s.name}" نهائياً. سجلات الحصص (${money(n)}) ستبقى محفوظة في الإحصائيات.`, { ok: "حذف الطالب", danger: true, title: "حذف الطالب" }))) return;
-  await busy(null, async () => { await deleteDoc(doc(db, "students", s.code)); S.archiveCode = ""; $("#archiveStudent").value = ""; renderArchive(); toast("تم حذف الطالب", "success"); });
+  if (!(await confirmBox(`سيتم حذف ملف الطالب "${s.name}" نهائياً مع كل حصصه (${money(n)}) وتقاريره وصوره ومحادثته، ولن تظهر لأي طالب يُسجَّل لاحقاً بنفس الكود. لا يمكن التراجع عن ذلك.`, { ok: "حذف الطالب وبياناته", danger: true, title: "حذف الطالب" }))) return;
+  await busy(null, async () => { await wipeStudentData(s.code); await deleteDoc(doc(db, "students", s.code)); S.archiveCode = ""; $("#archiveStudent").value = ""; refreshAdmin(); renderArchive(); toast("تم حذف الطالب وكل بياناته", "success"); });
+}
+async function wipeRecords() {
+  const s = S.students.get(S.archiveCode); if (!s) return;
+  const n = recordsOf(s.code).length;
+  if (!(await confirmBox(`سيتم حذف كل حصص وتقارير ومحادثة الطالب "${s.name}" (${money(n)} سجل) ويبقى ملفه كما هو، ويبدأ حسابه من الصفر. لا يمكن التراجع عن ذلك.`, { ok: "مسح السجلات", danger: true, title: "مسح سجلات الطالب" }))) return;
+  await busy(null, async () => { const k = await wipeStudentData(s.code); await updateDoc(doc(db, "students", s.code), { credit: 0, ledger: [] }); refreshAdmin(); renderArchive(); toast(`تم مسح ${money(k)} سجل`, "success"); });
 }
 
 /* --- تفاصيل الإحصائيات --- */
@@ -1966,6 +1984,7 @@ const ACTIONS = {
   stat: b => showBreakdown(b.dataset.type),
   "modal-close": () => closeModal(),
   "delete-student": () => deleteStudent(),
+  "wipe-records": () => wipeRecords(),
   "print-student": (b, code) => printStudentInvoice(code),
   "print-parent": (b, code) => printParentReport(code),
   "print-record": b => printStudentRecord(S.role === "admin" ? b.dataset.code : S.currentKid),
