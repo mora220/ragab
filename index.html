@@ -676,6 +676,7 @@ details.archive[open] summary::after{transform:rotate(180deg)}
           <button type="button" class="btn btn-ghost" data-act="print-record" id="archivePrintBtn"><i class="fa-solid fa-print"></i> طباعة السجل الكامل</button>
           <button type="button" class="btn btn-ghost" data-act="month-report"><i class="fa-solid fa-calendar-check"></i> التقرير الشهري</button>
           <button type="button" class="btn btn-ghost" data-act="print-statement-arch"><i class="fa-solid fa-file-invoice-dollar"></i> حساب المدفوعات</button>
+          <button type="button" class="btn btn-ghost" data-act="edit-credit"><i class="fa-solid fa-piggy-bank"></i> تعديل الرصيد الدائن</button>
           <button type="button" class="btn btn-soft-danger" data-act="wipe-records"><i class="fa-solid fa-eraser"></i> مسح كل السجلات</button>
           <button type="button" class="btn btn-soft-danger" data-act="delete-student"><i class="fa-solid fa-user-xmark"></i> حذف الطالب</button>
         </div>
@@ -865,10 +866,10 @@ function creditHolders(code) {
 }
 async function autoApplyCredit(id, code, price) {
   if (!(price > 0)) return 0;
-  const batch = writeBatch(db); let need = price, used = 0;
-  for (const h of creditHolders(code)) { if (need <= 0) break; const take = Math.min(need, creditOf(h)); if (take <= 0) continue; need -= take; used += take; batch.update(doc(db, "students", h), { credit: creditOf(h) - take }); }
+  const batch = writeBatch(db), from = {}; let need = price, used = 0;
+  for (const h of creditHolders(code)) { if (need <= 0) break; const take = Math.min(need, creditOf(h)); if (take <= 0) continue; need -= take; used += take; from[h] = take; batch.update(doc(db, "students", h), { credit: creditOf(h) - take }); }
   if (!used) return 0;
-  const at = Date.now(), no = "C" + newReceiptNo(), pay = arrayUnion({ no, at, amt: used, cr: true });
+  const at = Date.now(), no = "C" + newReceiptNo(), pay = arrayUnion({ no, at, amt: used, cr: true, from });
   batch.update(doc(db, "attendance", id), used >= price ? { isPaid: true, paidAt: at, receiptNo: no, paidPart: price, pays: pay } : { paidPart: used, partAt: at, pays: pay });
   await batch.commit(); return used;
 }
@@ -1335,7 +1336,7 @@ function renderFinance() {
     const s = S.students.get(f.code); if (!s) { S.finance = null; box.innerHTML = ""; return; }
     const list = unpaidOf(f.code), total = sumDue(list), c = esc(f.code);
     box.innerHTML = `<div class="total-card ${total ? "" : "ok"}"><div><p class="total-label">رصيد ${esc(s.name)}</p><p class="total-amount">${money(total)} <small>${CUR}</small></p><span class="chip chip-muted"><i class="fa-solid fa-layer-group"></i> ${money(list.length)} حصة</span>${creditSum([f.code]) ? `<span class="chip chip-success"><i class="fa-solid fa-piggy-bank"></i> لكم رصيد باقٍ ${money(creditSum([f.code]))} ${CUR}</span>` : ""}</div>
-      <div class="total-actions">${list.length ? `<button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button>` : ""}<button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button>${list.length ? `<button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button>` : ""}<button type="button" class="btn btn-ghost" data-act="print-statement"><i class="fa-solid fa-file-invoice-dollar"></i> حساب شامل للمدفوعات</button></div></div>
+      <div class="total-actions">${list.length ? `<button type="button" class="btn btn-success" data-act="pay-kid" data-code="${c}"><i class="fa-solid fa-check-double"></i> اعتماد سداد الكل</button>` : ""}<button type="button" class="btn btn-primary" data-act="pay-amount"><i class="fa-solid fa-coins"></i> سداد مبلغ</button>${list.length ? `<button type="button" class="btn btn-ghost" data-act="print-student" data-code="${c}"><i class="fa-solid fa-print"></i> كشف الحساب</button>` : ""}<button type="button" class="btn btn-ghost" data-act="print-statement"><i class="fa-solid fa-file-invoice-dollar"></i> حساب شامل للمدفوعات</button><button type="button" class="btn btn-ghost" data-act="edit-credit-fin"><i class="fa-solid fa-piggy-bank"></i> تعديل الرصيد الدائن</button></div></div>
       <div class="kid-block-head" style="margin-top:20px"><h4 class="sub-title" style="margin:0"><i class="fa-solid fa-clock-rotate-left"></i> الحصص غير المعتمدة</h4>${selAllBtn(f.code, list)}</div>
       ${hint}${list.length ? `<div class="stack">${list.map(dueRow).join("")}</div>` : empty("fa-face-smile", "رصيد الطالب مكتمل، لا توجد حصص معلّقة", "success")}
       ${receiptsHTML()}${selBar}`;
@@ -1438,11 +1439,16 @@ async function payAmount(b) {
   await commitPay(lines, x.at, b, credit);
 }
 /* إلغاء اعتماد حصص (خطأ في الاعتماد): تعود غير مسددة بالكامل */
+/* إرجاع المخصوم من الرصيد إلى صاحب الرصيد الأصلي (وليس لطالب الحصة) */
+function refundTo(map, r, p) {
+  const src = p.from && Object.keys(p.from).length ? p.from : { [r.studentCode]: num(p.amt) };
+  for (const [c, v] of Object.entries(src)) map[c] = (map[c] || 0) + num(v);
+}
 const resetPay = { isPaid: false, paidAt: null, receiptNo: null, paidPart: 0, partAt: null, pays: [] };
 async function unpayRecords(records, b) {
   records = records.filter(r => r && (r.isPaid || num(r.paidPart) > 0)); if (!records.length) return;
   const amt = sumPart(records), back = {};
-  records.forEach(r => (Array.isArray(r.pays) ? r.pays : []).forEach(p => { if (p.cr) back[r.studentCode] = (back[r.studentCode] || 0) + num(p.amt); }));
+  records.forEach(r => (Array.isArray(r.pays) ? r.pays : []).forEach(p => { if (p.cr) refundTo(back, r, p); }));
   const backTotal = Object.values(back).reduce((a, v) => a + v, 0);
   if (!(await confirmBox(`سيتم إلغاء اعتماد ${money(records.length)} حصة (مسدد منها ${money(amt)} ${CUR}) وتعود إلى الحصص غير المسددة.${backTotal ? ` وسيعود ${money(backTotal)} ${CUR} منها إلى الرصيد الدائن.` : ""} هل أنت متأكد؟`, { ok: "إلغاء الاعتماد", danger: true, title: "إلغاء اعتماد السداد" }))) return;
   const ok = await busy(b, async () => {
@@ -1467,7 +1473,7 @@ async function cancelReceipt(no, b) {
       const has = Array.isArray(r.pays) && r.pays.some(x => x.no === no);
       if (!has) { ops.push([doc(db, "attendance", r.id), resetPay]); return; }
       const gone = r.pays.filter(x => x.no === no);
-      gone.forEach(x => { if (x.cr) delta[r.studentCode] = (delta[r.studentCode] || 0) + num(x.amt); });
+      gone.forEach(x => { if (x.cr) refundTo(delta, r, x); });
       const pays = r.pays.filter(x => x.no !== no), part = pays.reduce((a, x) => a + num(x.amt), 0), full = part > 0 && part >= priceOf(r), last = pays[pays.length - 1];
       ops.push([doc(db, "attendance", r.id), { pays, paidPart: full ? priceOf(r) : part, isPaid: full, paidAt: full && last ? last.at : null, receiptNo: full && last ? last.no : null, partAt: !full && last ? last.at : null }]);
     });
@@ -1643,6 +1649,17 @@ async function deleteStudent() {
   const n = recordsOf(s.code).length;
   if (!(await confirmBox(`سيتم حذف ملف الطالب "${s.name}" نهائياً مع كل حصصه (${money(n)}) وتقاريره وصوره ومحادثته، ولن تظهر لأي طالب يُسجَّل لاحقاً بنفس الكود. لا يمكن التراجع عن ذلك.`, { ok: "حذف الطالب وبياناته", danger: true, title: "حذف الطالب" }))) return;
   await busy(null, async () => { await wipeStudentData(s.code); await deleteDoc(doc(db, "students", s.code)); S.archiveCode = ""; $("#archiveStudent").value = ""; refreshAdmin(); renderArchive(); toast("تم حذف الطالب وكل بياناته", "success"); });
+}
+async function editCredit(code) {
+  const st = S.students.get(code); if (!st) return toast("اختر طالباً أولاً", "info");
+  const v = await new Promise(res => openModal({
+    title: '<i class="fa-solid fa-piggy-bank"></i> تعديل الرصيد الدائن',
+    html: `<p class="confirm-text">الطالب: <b>${esc(st.name)}</b>. الرصيد الحالي: <b>${money(creditOf(code))} ${CUR}</b>. اكتب الرصيد الصحيح (0 لإلغائه).</p><div class="field" style="margin-top:12px"><input type="number" id="crVal" class="input" min="0" inputmode="decimal" value="${creditOf(code)}"></div>`,
+    onClose: () => res(null),
+    actions: [{ label: "حفظ", cls: "btn-success", onClick: () => { const x = num($("#crVal").value); if (x < 0) return toast("قيمة غير صحيحة", "error"); S.onModalClose = null; closeModal(); res(x); } }, { label: "إلغاء", cls: "btn-ghost", onClick: () => closeModal() }]
+  }));
+  if (v === null) return;
+  await busy(null, async () => { await updateDoc(doc(db, "students", code), { credit: v }); toast("تم تعديل الرصيد الدائن", "success"); renderArchive(); });
 }
 async function wipeRecords() {
   const s = S.students.get(S.archiveCode); if (!s) return;
@@ -1985,6 +2002,8 @@ const ACTIONS = {
   "modal-close": () => closeModal(),
   "delete-student": () => deleteStudent(),
   "wipe-records": () => wipeRecords(),
+  "edit-credit": (b, c) => editCredit(c || S.archiveCode),
+  "edit-credit-fin": () => editCredit($("#finStudent").value),
   "print-student": (b, code) => printStudentInvoice(code),
   "print-parent": (b, code) => printParentReport(code),
   "print-record": b => printStudentRecord(S.role === "admin" ? b.dataset.code : S.currentKid),
